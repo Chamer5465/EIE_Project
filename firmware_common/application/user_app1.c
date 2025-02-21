@@ -53,14 +53,15 @@ extern volatile u32 G_u32SystemTime1ms;                   /*!< @brief From main.
 extern volatile u32 G_u32SystemTime1s;                    /*!< @brief From main.c */
 extern volatile u32 G_u32SystemFlags;                     /*!< @brief From main.c */
 extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.c */
-extern const u8 aau8BlackBox[(u8)14][(u8)14];
+extern const u8 aau8BlackBox[(u8)14][((u8)14 * (u8)1 / 8 + 1)];
+extern const u8 aau8CrossOut[(u8)14][(u8)14];
 
 
 /***********************************************************************************************************************
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
-int board[4][8] = {{1, 0, 0, 0, 0, 0, 0, 0}, {1, 1, 0, 0, 0, 0, 0, 0}, {1, 1, 1, 0, 0, 0, 0, 0}, {1, 1, 1, 0, 0, 0, 0, 0}};
+int board[4][8] = {{1, 0, 0, 0, 0, 0, 0, 0}, {1, 2, 0, 0, 0, 0, 0, 0}, {1, 2, 1, 0, 0, 0, 0, 0}, {2, 2, 1, 0, 0, 0, 0, 0}};
 int **ships[4] = {(int*[]) {&board[0][0]}, (int*[]) {&board[1][0], &board[1][1]}, (int*[]) {&board[2][0], &board[2][1], &board[1][2]}, (int*[]) {&board[2][0], &board[2][1], &board[2][2]}};
 
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
@@ -195,10 +196,25 @@ void displayBoard() {
             if (board[i][j] == 1) {
                 targetBlock.u16RowStart = i * 16 + 1;
                 targetBlock.u16ColumnStart = j * 16 + 1;
+                LcdClearPixels(&targetBlock);
                 LcdLoadBitmap(&aau8BlackBox[0][0], &targetBlock);
+            } else if (board[i][j] == 2) {
+                targetBlock.u16RowStart = i * 16 + 1;
+                targetBlock.u16ColumnStart = j * 16 + 1;
+                LcdClearPixels(&targetBlock);
+                LcdLoadBitmap(&aau8CrossOut[0][0], &targetBlock);
                 
             }
         }
+    }
+}
+
+int checkHealth() {
+    int ship1 = 1;
+    if (*ships[0][0] == 2) {
+        LedOn(RED0);
+        LedOff(GREEN0);
+        LedOff(RED0)
     }
 }
 
