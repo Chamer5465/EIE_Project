@@ -61,8 +61,8 @@ extern const u8 aau8CrossOut[(u8)14][(u8)14];
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
-int board[4][8] = {{1, 0, 0, 0, 0, 0, 0, 0}, {1, 2, 0, 0, 0, 0, 0, 0}, {1, 2, 1, 0, 0, 0, 0, 0}, {2, 2, 1, 0, 0, 0, 0, 0}};
-int **ships[4] = {(int*[]) {&board[0][0]}, (int*[]) {&board[1][0], &board[1][1]}, (int*[]) {&board[2][0], &board[2][1], &board[1][2]}, (int*[]) {&board[2][0], &board[2][1], &board[2][2]}};
+int board[4][8] = {{2, 0, 0, 0, 0, 0, 0, 0}, {1, 1, 0, 0, 0, 0, 0, 0}, {1, 2, 1, 0, 0, 0, 0, 0}, {2, 2, 1, 0, 0, 0, 0, 0}};
+int **ships[4] = {(int*[]) {&board[0][0]}, (int*[]) {&board[1][0], &board[1][1]}, (int*[]) {&board[2][0], &board[2][1], &board[2][2]}, (int*[]) {&board[3][0], &board[3][1], &board[3][2]}};
 
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
@@ -100,6 +100,18 @@ void UserApp1Initialize(void)
   int x = 0;
   int y = 0;
   int rotation = 0;
+  LedOn(GREEN0);
+  LedOff(RED0);
+  LedOff(BLUE0);
+  LedOn(GREEN1);
+  LedOff(RED1);
+  LedOff(BLUE1);
+  LedOn(GREEN2);
+  LedOff(RED2);
+  LedOff(BLUE2);
+  LedOn(GREEN3);
+  LedOff(RED3);
+  LedOff(BLUE3);
   LcdClearScreen();
   PixelAddressType targetPixel; 
   for (int i = 0; i < 128; i++) {
@@ -211,10 +223,69 @@ void displayBoard() {
 
 int checkHealth() {
     int ship1 = 1;
+    int ship2 = 2;
+    int ship3 = 3;
+    int ship4 = 3;
     if (*ships[0][0] == 2) {
-        LedOn(RED0);
+        ship1--;
+    }
+    for (int i = 0; i < 2; i++) {
+        if (*ships[1][i] == 2) {
+            ship2--;
+        }
+    }
+    for (int i = 0; i < 3; i++) {
+        if (*ships[2][i] == 2) {
+            ship3--;
+        }
+        if (*ships[3][i] == 2) {
+            ship4--;
+        }
+    }
+    if (ship1 == 0) {
+        LedOff(RED0);
         LedOff(GREEN0);
-        LedOff(RED0)
+        LedOff(BLUE0);
+    }
+    if (ship2 == 1) {
+        LedOn(RED1);
+        LedOff(GREEN1);
+        LedOff(BLUE1);
+    } else if (ship2 == 0) {
+        LedOff(RED1);
+        LedOff(GREEN1);
+        LedOff(BLUE1);
+    }
+    if (ship3 == 2) {
+        LedOn(RED2);
+        LedOn(GREEN2);
+        LedOff(BLUE2);
+    } else if (ship3 == 1) {
+        LedOn(RED2);
+        LedOff(GREEN2);
+        LedOff(BLUE2);
+    } else if (ship3 == 0) {
+        LedOff(RED2);
+        LedOff(GREEN2);
+        LedOff(BLUE2);
+    }
+    if (ship4 == 2) {
+        LedOn(RED3);
+        LedOn(GREEN3);
+        LedOff(BLUE3);
+    } else if (ship4 == 1) {
+        LedOn(RED3);
+        LedOff(GREEN3);
+        LedOff(BLUE3);
+    } else if (ship4 == 0) {
+        LedOff(RED3);
+        LedOff(GREEN3);
+        LedOff(BLUE3);
+    }
+    if (ship1 == 0 && ship2 == 0 && ship3 == 0 && ship4 == 0) {
+        return 1;
+    } else {
+        return 0;
     }
 }
 
@@ -223,7 +294,7 @@ int checkHealth() {
 static void UserApp1SM_Idle(void)
 {
     displayBoard();
-     
+    checkHealth();
 } /* end UserApp1SM_Idle() */
      
 
