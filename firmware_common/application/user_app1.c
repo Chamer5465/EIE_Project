@@ -53,12 +53,16 @@ extern volatile u32 G_u32SystemTime1ms;                   /*!< @brief From main.
 extern volatile u32 G_u32SystemTime1s;                    /*!< @brief From main.c */
 extern volatile u32 G_u32SystemFlags;                     /*!< @brief From main.c */
 extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.c */
+extern const u8 aau8BlackBox[(u8)14][(u8)14];
 
 
 /***********************************************************************************************************************
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
+int board[4][8] = {{1, 0, 0, 0, 0, 0, 0, 0}, {1, 1, 0, 0, 0, 0, 0, 0}, {1, 1, 1, 0, 0, 0, 0, 0}, {1, 1, 1, 0, 0, 0, 0, 0}};
+int **ships[4] = {(int*[]) {&board[0][0]}, (int*[]) {&board[1][0], &board[1][1]}, (int*[]) {&board[2][0], &board[2][1], &board[1][2]}, (int*[]) {&board[2][0], &board[2][1], &board[2][2]}};
+
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
 
@@ -92,6 +96,51 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  int x = 0;
+  int y = 0;
+  int rotation = 0;
+  LcdClearScreen();
+  PixelAddressType targetPixel; 
+  for (int i = 0; i < 128; i++) {
+      targetPixel.u16PixelRowAddress = 0;
+      targetPixel.u16PixelColumnAddress = i;
+      LcdSetPixel(&targetPixel);
+  }
+  for (int i = 0; i < 64; i++) {
+      targetPixel.u16PixelRowAddress = i;
+      targetPixel.u16PixelColumnAddress = 0;
+      LcdSetPixel(&targetPixel);
+  }
+  for (int j = 16; j <= 48; j += 16) {
+      for (int i = 0; i < 128; i++) {
+          targetPixel.u16PixelRowAddress = j - 1;
+          targetPixel.u16PixelColumnAddress = i;
+          LcdSetPixel(&targetPixel);
+          targetPixel.u16PixelRowAddress = j;
+          targetPixel.u16PixelColumnAddress = i;
+          LcdSetPixel(&targetPixel);
+      }
+  }
+  for (int j = 16; j <= 112; j += 16) {
+      for (int i = 0; i < 64; i++) {
+          targetPixel.u16PixelRowAddress = i;
+          targetPixel.u16PixelColumnAddress = j - 1;
+          LcdSetPixel(&targetPixel);
+          targetPixel.u16PixelRowAddress = i;
+          targetPixel.u16PixelColumnAddress = j;
+          LcdSetPixel(&targetPixel);
+      }
+  }
+  for (int i = 0; i < 128; i++) {
+      targetPixel.u16PixelRowAddress = 63;
+      targetPixel.u16PixelColumnAddress = i;
+      LcdSetPixel(&targetPixel);
+  }
+  for (int i = 0; i < 64; i++) {
+      targetPixel.u16PixelRowAddress = i;
+      targetPixel.u16PixelColumnAddress = 127;
+      LcdSetPixel(&targetPixel);
+  }
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -136,10 +185,28 @@ void UserApp1RunActiveState(void)
 /**********************************************************************************************************************
 State Machine Function Definitions
 **********************************************************************************************************************/
+
+void displayBoard() {
+    PixelBlockType targetBlock;
+    targetBlock.u16RowSize = 14;
+    targetBlock.u16ColumnSize = 14;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (board[i][j] == 1) {
+                targetBlock.u16RowStart = i * 16 + 1;
+                targetBlock.u16ColumnStart = j * 16 + 1;
+                LcdLoadBitmap(&aau8BlackBox[0][0], &targetBlock);
+                
+            }
+        }
+    }
+}
+
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
+    displayBoard();
      
 } /* end UserApp1SM_Idle() */
      
