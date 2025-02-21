@@ -215,7 +215,7 @@ static PixelBlockType Lcd_sUpdateArea;                            /*!< @brief Ar
 static PixelBlockType Lcd_sCurrentUpdateArea;                     /*!< @brief Area of LCD currently being updated */
 
 static u8 Lcd_au8MessageInit[]  = "LCD Ready\r\n";
-static u8 Lcd_au8MessageWelcome[] = "SAM3U2 DOT MATRIX";
+static u8 Lcd_au8MessageWelcome[] = "evil battleship";
                                  
 static  u8 Lcd_au8SetupArray[] = {U8_LCD_BIAS_LOW, U8_LCD_ADC_SELECT_NORMAL, U8_LCD_COMMON_MODE1, U8_LCD_COMMON_MODE0, U8_LCD_DISPLAY_LINE_SETx,
                                   U8_LCD_VOLTAGTE_REG_SETx | U8_SET_BIT0 | U8_SET_BIT2,
