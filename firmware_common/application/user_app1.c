@@ -61,9 +61,14 @@ extern const u8 aau8CrossOut[(u8)14][(u8)14];
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
-int board[4][8] = {{2, 0, 0, 0, 0, 0, 0, 0}, {1, 1, 0, 0, 0, 0, 0, 0}, {1, 2, 1, 0, 0, 0, 0, 0}, {2, 2, 1, 0, 0, 0, 0, 0}};
-int **ships[4] = {(int*[]) {&board[0][0]}, (int*[]) {&board[1][0], &board[1][1]}, (int*[]) {&board[2][0], &board[2][1], &board[2][2]}, (int*[]) {&board[3][0], &board[3][1], &board[3][2]}};
-
+int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
+int x = 0;
+int xPrev = 0;
+int yPrev = 0;
+int y = 0;
+int rotation = 0;
+int ship = 0;
+bool placementState = TRUE;
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
 
@@ -97,9 +102,6 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
-  int x = 0;
-  int y = 0;
-  int rotation = 0;
   LedOn(GREEN0);
   LedOff(RED0);
   LedOff(BLUE0);
@@ -205,41 +207,37 @@ void displayBoard() {
     targetBlock.u16ColumnSize = 14;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 8; j++) {
-            if (board[i][j] == 1) {
-                targetBlock.u16RowStart = i * 16 + 1;
+            targetBlock.u16RowStart = i * 16 + 1;
                 targetBlock.u16ColumnStart = j * 16 + 1;
+            if (board[i][j] > 0 && board[i][j] < 5) {
                 LcdClearPixels(&targetBlock);
                 LcdLoadBitmap(&aau8BlackBox[0][0], &targetBlock);
-            } else if (board[i][j] == 2) {
-                targetBlock.u16RowStart = i * 16 + 1;
-                targetBlock.u16ColumnStart = j * 16 + 1;
+            } else if (board[i][j] == 0) {
                 LcdClearPixels(&targetBlock);
                 LcdLoadBitmap(&aau8CrossOut[0][0], &targetBlock);
-                
+            } else {
+                LcdClearPixels(&targetBlock);
             }
         }
     }
 }
 
 int checkHealth() {
-    int ship1 = 1;
-    int ship2 = 2;
-    int ship3 = 3;
-    int ship4 = 3;
-    if (*ships[0][0] == 2) {
-        ship1--;
-    }
-    for (int i = 0; i < 2; i++) {
-        if (*ships[1][i] == 2) {
-            ship2--;
-        }
-    }
-    for (int i = 0; i < 3; i++) {
-        if (*ships[2][i] == 2) {
-            ship3--;
-        }
-        if (*ships[3][i] == 2) {
-            ship4--;
+    int ship1 = 0;
+    int ship2 = 0;
+    int ship3 = 0;
+    int ship4 = 0;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (board[i][j] == 1) {
+                ship1++;
+            } else if(board[i][j] == 2) {
+                ship2++;
+            } else if(board[i][j] == 3) {
+                ship3++;
+            } else if(board[i][j] == 4) {
+                ship4++;
+            }
         }
     }
     if (ship1 == 0) {
@@ -289,12 +287,116 @@ int checkHealth() {
     }
 }
 
+void placement() {
+    if (ship == 0) {
+        board[y][x] = 1; 
+        if (x != xPrev || y != yPrev) {
+            board[yPrev][xPrev] = 5;
+            xPrev = x;
+            yPrev = y;
+        }
+    } else if (ship == 1 && board[y][x] > 1 && ((x > 6 && board[y][x - 1] > 1) || (x <= 6 && board[y][x + 1] > 1))) {
+        board[y][x] = 2;
+        if (x > 6) {
+            board[y][x - 1] = 2;
+            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 1 && board[yPrev][xPrev - 1] > 1) {
+                board[yPrev][xPrev] = 5;
+                board[yPrev][xPrev - 1] = 5;
+                xPrev = x;
+                yPrev = y;
+            }
+        } else {
+            board[y][x + 1] = 2;
+            if (x != xPrev || y != yPrev) {
+                board[yPrev][xPrev] = 5;
+                board[yPrev][xPrev + 1] = 5;
+                xPrev = x;
+                yPrev = y;
+            } 
+        }
+    } else if (ship == 2 && board[y][x] > 2 && ((x > 5 && board[y][x - 1] > 2 && board[y][x - 2] > 2) || (x <= 5 && board[y][x + 1] > 2 && board[y][x + 2] > 2))) {
+        board[y][x] = 3;
+        if (x > 5) {
+            board[y][x - 1] = 3;
+            board[y][x - 2] = 3;
+            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 2 && board[yPrev][xPrev - 1] > 2 && board[yPrev][xPrev - 2] > 2) {
+                board[yPrev][xPrev] = 5;
+                board[yPrev][xPrev - 1] = 5;
+                board[yPrev][xPrev - 2] = 5;
+                xPrev = x;
+                yPrev = y;
+            }
+        } else {
+            board[y][x + 1] = 3;
+            board[y][x + 2] = 3;
+            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 2 && board[yPrev][xPrev + 1] > 2 && board[yPrev][xPrev + 2] > 2) {
+                board[yPrev][xPrev] = 5;
+                board[yPrev][xPrev + 1] = 5;
+                board[yPrev][xPrev + 2] = 5;
+                xPrev = x;
+                yPrev = y;
+            }
+        }
+    } else if (ship == 3 && board[y][x] > 3  && ((x > 5 && board[y][x - 1] > 3 && board[y][x - 2] > 3) || (x <= 5 && board[y][x + 1] > 3 && board[y][x + 2] > 3))) {
+        board[y][x] = 4;
+        if (x > 5) {
+            board[y][x - 1] = 4;
+            board[y][x - 2] = 4;
+            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 3 && board[yPrev][xPrev - 1] > 3 && board[yPrev][xPrev - 2] > 3) {
+                board[yPrev][xPrev] = 5;
+                board[yPrev][xPrev - 1] = 5;
+                board[yPrev][xPrev - 2] = 5;
+                xPrev = x;
+                yPrev = y;
+            }
+        } else {
+            board[y][x + 1] = 1;
+            board[y][x + 2] = 1;
+            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 3 && board[yPrev][xPrev + 1] > 3 && board[yPrev][xPrev + 2] > 3) {
+                board[yPrev][xPrev] = 5;
+                board[yPrev][xPrev + 1] = 5;
+                board[yPrev][xPrev + 2] = 5;
+                xPrev = x;
+                yPrev = y;
+            }
+        }
+    }
+}
+
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
+    if (placementState) {
+        if (ship > 3) {
+            placementState = FALSE;
+        } else {
+            placement();
+            if (WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) {
+                ButtonAcknowledge(BUTTON0);
+                ButtonAcknowledge(BUTTON1);
+                ship++;
+            }
+        }
+    }
+    if(WasButtonPressed(BUTTON0)) {
+        ButtonAcknowledge(BUTTON0);
+        x++;
+        if (x > 7) {
+            x = 0;
+        }
+    }
+    if(WasButtonPressed(BUTTON1)) {
+        ButtonAcknowledge(BUTTON1);
+        y++;
+        if (y > 3) {
+            y = 0;
+        }
+    }
+    
     displayBoard();
     checkHealth();
+
 } /* end UserApp1SM_Idle() */
      
 

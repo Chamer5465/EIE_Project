@@ -34,7 +34,7 @@ Function Declarations
 void displayBoard();
 int checkHealth();
 void shoot(int player, int x, int y);
-void placement(int ship, int x, int y);
+void placement();
 
 
 /*------------------------------------------------------------------------------------------------------------------*/
