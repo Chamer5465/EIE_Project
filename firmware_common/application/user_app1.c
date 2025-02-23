@@ -55,6 +55,7 @@ extern volatile u32 G_u32SystemFlags;                     /*!< @brief From main.
 extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.c */
 extern const u8 aau8BlackBox[(u8)14][((u8)14 * (u8)1 / 8 + 1)];
 extern const u8 aau8CrossOut[(u8)14][(u8)14];
+extern const u8 aau8Target[(u8)14][(u8)14];
 
 
 /***********************************************************************************************************************
@@ -216,6 +217,9 @@ void displayBoard() {
             } else if (board[i][j] == 0) {
                 LcdClearPixels(&targetBlock);
                 LcdLoadBitmap(&aau8CrossOut[0][0], &targetBlock);
+            } else if (board[i][j] == 6){
+                LcdClearPixels(&targetBlock);
+                LcdLoadBitmap(&aau8Target[0][0], &targetBlock);
             } else {
                 LcdClearPixels(&targetBlock);
             }
