@@ -63,6 +63,7 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int x = 0;
+int currentBoardState = 0;
 int xPrev = 0;
 int yPrev = 0;
 int y = 0;
@@ -365,7 +366,7 @@ void placement() {
 
 void shoot() {
     if (x != xPrev || y != yPrev) { // Deletes previous sprite
-        board[yPrev][xPrev] = 5; // board code 5 is empty
+        board[yPrev][xPrev] = currentBoardState; // Uses previous board state
         xPrev = x;
         yPrev = y;
     }
@@ -381,6 +382,7 @@ void shoot() {
             if (x > 7) { // Reset to left of board
                 x = 0;
             }
+            currentBoardState = board[y][x]; // Saves board type to not overwrite other things
             board[y][x] = 6; // board code 6 is a target
         }
     }
@@ -391,6 +393,7 @@ void shoot() {
             if (y > 3) { // Reset to top of board
                 y = 0;
             }
+            currentBoardState = board[y][x]; // Saves board type to not overwrite other things
             board[y][x] = 6; // board code 6 is a target
         }
     }

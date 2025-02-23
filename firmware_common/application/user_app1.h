@@ -33,8 +33,10 @@ Function Declarations
 
 void displayBoard();
 int checkHealth();
-void shoot(int player, int x, int y);
+void shoot();
 void placement();
+int sendRecieve(int x, int y, int turn);
+
 
 
 /*------------------------------------------------------------------------------------------------------------------*/
