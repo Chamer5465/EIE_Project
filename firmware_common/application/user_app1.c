@@ -363,6 +363,39 @@ void placement() {
     }
 }
 
+void shoot() {
+    if (x != xPrev || y != yPrev) { // Deletes previous sprite
+        board[yPrev][xPrev] = 5; // board code 5 is empty
+        xPrev = x;
+        yPrev = y;
+    }
+    if(WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) { // Checks if both button are pressed at the same time
+        ButtonAcknowledge(BUTTON0);
+        ButtonAcknowledge(BUTTON1);
+        board[y][x] = 0; // board code 0 is an X
+    }
+    if(IsButtonHeld(BUTTON0, 50)) { // Checks if button is held for 50ms to give both button hit priority
+        if(WasButtonPressed(BUTTON0)) { // If the button is held this function does not loop preventing executing movement too many times
+            ButtonAcknowledge(BUTTON0);
+            x++;
+            if (x > 7) { // Reset to left of board
+                x = 0;
+            }
+            board[y][x] = 6; // board code 6 is a target
+        }
+    }
+    if(IsButtonHeld(BUTTON1, 50)) { // Checks if button is held for 50ms to give both button hit priority
+        if(WasButtonPressed(BUTTON1)) { // If the button is held this function does not loop preventing executing movement too many times
+            ButtonAcknowledge(BUTTON1);
+            y++;
+            if (y > 3) { // Reset to top of board
+                y = 0;
+            }
+            board[y][x] = 6; // board code 6 is a target
+        }
+    }
+}
+
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
