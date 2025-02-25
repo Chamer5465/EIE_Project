@@ -53,9 +53,17 @@ extern volatile u32 G_u32SystemTime1ms;                   /*!< @brief From main.
 extern volatile u32 G_u32SystemTime1s;                    /*!< @brief From main.c */
 extern volatile u32 G_u32SystemFlags;                     /*!< @brief From main.c */
 extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.c */
+
+/* Bitmaps */
 extern const u8 aau8BlackBox[(u8)14][((u8)14 * (u8)1 / 8 + 1)];
 extern const u8 aau8CrossOut[(u8)14][(u8)14];
 extern const u8 aau8Target[(u8)14][(u8)14];
+
+/* ant_api */
+extern u32 G_u32AntApiCurrentMessageTimeStamp;                            // From ant_api.c
+extern AntApplicationMessageType G_eAntApiCurrentMessageClass;            // From ant_api.c
+extern u8 G_au8AntApiCurrentMessageBytes[ANT_APPLICATION_MESSAGE_BYTES];  // From ant_api.c
+extern AntExtendedDataType G_sAntApiCurrentMessageExtData;                // From ant_api.c
 
 
 /***********************************************************************************************************************
@@ -368,6 +376,8 @@ void placement() {
     }
 }
 
+/*-------------------------------------------------------------------------------------------------------------------*/
+/* Allows user to select a space to shoot enemy when it's their turn*/
 void shoot() {
     if (x != xPrev || y != yPrev) { // Deletes previous sprite
         board[yPrev][xPrev] = currentBoardState; // Uses previous board state
@@ -401,7 +411,7 @@ void shoot() {
             board[y][x] = 6; // board code 6 is a target
         }
     }
-}
+} /* end shoot() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
