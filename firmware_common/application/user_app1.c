@@ -80,12 +80,13 @@ static fnCode_type UserApp1_pfStateMachine;                 /*!< @brief The stat
 static u32 UserApp1_u32Timeout;                             /*!< @brief Timeout counter used across states */
 static u32 UserApp1_u32DataMsgCount = 0;                    /* ANT_DATA packet counter */
 static u32 UserApp1_u32TickMsgCount = 0;                    /* ANT TICK packet counter */
-static u8 au8AntMessage[] =  {0, 0, 0, 0, 0xA5, 0, 0, 0};  /* ANT Master Test Message. First 4 bits allocated for data */
+static u8 au8AntMessage[] =  {0, 0, 0, 0xFF, 0xA5, 0, 0, 0};  /* ANT Master Test Message */
 
 /**********************************************************************************************************************
-Board State Dictionary
+Dictionary
 **********************************************************************************************************************/
 /*
+Board States:
 0 = Hit
 1 = Ship 1
 2 = Ship 2
@@ -94,8 +95,10 @@ Board State Dictionary
 5 = Empty
 6 = Target
 
-
-
+au8AntMessage:
+au8AntMessage[0] = 0xFF Defeat
+au8AntMessage[3] = 0xFF Placeholder to make sure slave doesn't send any data initially and just waits for signal
+au8AntMessage[5-7] Represnt the message number being sent
 
 */ 
 
@@ -108,6 +111,115 @@ Function Definitions
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*! @publicsection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
+
+
+/*-------------------------------------------------------------------------------------------------------------------*/
+/* Displays ships on the board */
+void displayBoard() {
+  PixelBlockType targetBlock;
+  targetBlock.u16RowSize = 14;
+  targetBlock.u16ColumnSize = 14;
+  for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 8; j++) {
+          targetBlock.u16RowStart = i * 16 + 1;
+              targetBlock.u16ColumnStart = j * 16 + 1;
+          if (board[i][j] > 0 && board[i][j] < 5) {
+              LcdClearPixels(&targetBlock);
+              LcdLoadBitmap(&aau8BlackBox[0][0], &targetBlock);
+          } else if (board[i][j] == 0) {
+              LcdClearPixels(&targetBlock);
+              LcdLoadBitmap(&aau8CrossOut[0][0], &targetBlock);
+          } else if (board[i][j] == 6){
+              LcdClearPixels(&targetBlock);
+              LcdLoadBitmap(&aau8Target[0][0], &targetBlock);
+          } else {
+              LcdClearPixels(&targetBlock);
+          }
+      }
+  }
+}
+
+/*-------------------------------------------------------------------------------------------------------------------*/
+/* Checks the Health of the ships and changes LED states */
+void checkHealth() {
+  int ship1 = 0;
+  int ship2 = 0;
+  int ship3 = 0;
+  int ship4 = 0;
+  for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 8; j++) {
+          if (board[i][j] == 1) {
+              ship1++;
+          } else if(board[i][j] == 2) {
+              ship2++;
+          } else if(board[i][j] == 3) {
+              ship3++;
+          } else if(board[i][j] == 4) {
+              ship4++;
+          }
+      }
+  }
+  if (ship1 == 0) {
+      LedOff(RED0);
+      LedOff(GREEN0);
+      LedOff(BLUE0);
+  }
+  if (ship2 == 1) {
+      LedOn(RED1);
+      LedOff(GREEN1);
+      LedOff(BLUE1);
+  } else if (ship2 == 0) {
+      LedOff(RED1);
+      LedOff(GREEN1);
+      LedOff(BLUE1);
+  }
+  if (ship3 == 2) {
+      LedOn(RED2);
+      LedOn(GREEN2);
+      LedOff(BLUE2);
+  } else if (ship3 == 1) {
+      LedOn(RED2);
+      LedOff(GREEN2);
+      LedOff(BLUE2);
+  } else if (ship3 == 0) {
+      LedOff(RED2);
+      LedOff(GREEN2);
+      LedOff(BLUE2);
+  }
+  if (ship4 == 2) {
+      LedOn(RED3);
+      LedOn(GREEN3);
+      LedOff(BLUE3);
+  } else if (ship4 == 1) {
+      LedOn(RED3);
+      LedOff(GREEN3);
+      LedOff(BLUE3);
+  } else if (ship4 == 0) {
+      LedOff(RED3);
+      LedOff(GREEN3);
+      LedOff(BLUE3);
+  }
+  if (ship1 == 0 && ship2 == 0 && ship3 == 0 && ship4 == 0) {
+    UserApp1_pfStateMachine = endGame; // End Game
+  } else {
+    UserApp1_pfStateMachine = shoot; // Continue State Machine
+  }
+}
+
+/*-------------------------------------------------------------------------------------------------------------------*/
+/* Checks if shot from other board hit boat */
+void checkHit(u8 shot) {
+// Convert hexadecimal to decimal coordinates
+int x = shot/8;
+int y = (shot % 8);
+
+// Check if the spot was occupied ie) not == 5
+if (board[x][y] != 5 ) 
+  board[x][y] = 0; // Mark as hit
+displayBoard(); // Update board
+checkHealth(); // Update ship health and continue state machine in further function
+} /* end checkHit() */
+
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*! @protectedsection */                                                                                            
@@ -257,103 +369,10 @@ void UserApp1RunActiveState(void)
 /*! @privatesection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
 
-
 /**********************************************************************************************************************
 State Machine Function Definitions
 **********************************************************************************************************************/
 
-/*-------------------------------------------------------------------------------------------------------------------*/
-/* Loops to display ships on the board */
-void displayBoard() {
-    PixelBlockType targetBlock;
-    targetBlock.u16RowSize = 14;
-    targetBlock.u16ColumnSize = 14;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 8; j++) {
-            targetBlock.u16RowStart = i * 16 + 1;
-                targetBlock.u16ColumnStart = j * 16 + 1;
-            if (board[i][j] > 0 && board[i][j] < 5) {
-                LcdClearPixels(&targetBlock);
-                LcdLoadBitmap(&aau8BlackBox[0][0], &targetBlock);
-            } else if (board[i][j] == 0) {
-                LcdClearPixels(&targetBlock);
-                LcdLoadBitmap(&aau8CrossOut[0][0], &targetBlock);
-            } else if (board[i][j] == 6){
-                LcdClearPixels(&targetBlock);
-                LcdLoadBitmap(&aau8Target[0][0], &targetBlock);
-            } else {
-                LcdClearPixels(&targetBlock);
-            }
-        }
-    }
-}
-
-/*-------------------------------------------------------------------------------------------------------------------*/
-/* Checks the Health of the ships and changes LED states */
-void checkHealth() {
-    int ship1 = 0;
-    int ship2 = 0;
-    int ship3 = 0;
-    int ship4 = 0;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 8; j++) {
-            if (board[i][j] == 1) {
-                ship1++;
-            } else if(board[i][j] == 2) {
-                ship2++;
-            } else if(board[i][j] == 3) {
-                ship3++;
-            } else if(board[i][j] == 4) {
-                ship4++;
-            }
-        }
-    }
-    if (ship1 == 0) {
-        LedOff(RED0);
-        LedOff(GREEN0);
-        LedOff(BLUE0);
-    }
-    if (ship2 == 1) {
-        LedOn(RED1);
-        LedOff(GREEN1);
-        LedOff(BLUE1);
-    } else if (ship2 == 0) {
-        LedOff(RED1);
-        LedOff(GREEN1);
-        LedOff(BLUE1);
-    }
-    if (ship3 == 2) {
-        LedOn(RED2);
-        LedOn(GREEN2);
-        LedOff(BLUE2);
-    } else if (ship3 == 1) {
-        LedOn(RED2);
-        LedOff(GREEN2);
-        LedOff(BLUE2);
-    } else if (ship3 == 0) {
-        LedOff(RED2);
-        LedOff(GREEN2);
-        LedOff(BLUE2);
-    }
-    if (ship4 == 2) {
-        LedOn(RED3);
-        LedOn(GREEN3);
-        LedOff(BLUE3);
-    } else if (ship4 == 1) {
-        LedOn(RED3);
-        LedOff(GREEN3);
-        LedOff(BLUE3);
-    } else if (ship4 == 0) {
-        LedOff(RED3);
-        LedOff(GREEN3);
-        LedOff(BLUE3);
-    }
-    if (ship1 == 0 && ship2 == 0 && ship3 == 0 && ship4 == 0) {
-      UserApp1_pfStateMachine = endGame; // End Game
-    } else {
-      UserApp1_pfStateMachine = shoot; // Continue State Machine
-    }
-}
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Placement of ships at the beginning of the game */
@@ -494,20 +513,6 @@ int sendShot(int x, int y) {
     } /* End ANT_TICK */
   } /* End ReadAppMessage Buffer */
 } /* end sendShot() */
-
-/*-------------------------------------------------------------------------------------------------------------------*/
-/* Checks if shot from other board hit boat */
-void checkHit(u8 shot) {
-  // Convert hexadecimal to decimal coordinates
-  int x = shot/8;
-  int y = (shot % 8);
-
-  // Check if the spot was occupied ie) not == 5
-  if (board[x][y] != 5 ) 
-    board[x][y] = 0; // Mark as hit
-  displayBoard(); // Update board
-  checkHealth(); // Update ship health and continue state machine in further function
-} /* end checkHit() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Wait for ANT Channel to be configured*/
