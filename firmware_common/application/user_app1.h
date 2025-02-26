@@ -32,10 +32,8 @@ Function Declarations
 /*--------------------------------------------------------------------------------------------------------------------*/
 
 void displayBoard();
-int checkHealth();
-void shoot();
-void placement();
-int sendRecieve(int x, int y, int turn);
+void checkHit(u8 shot);
+void checkHealth();
 
 
 
@@ -56,7 +54,10 @@ State Machine Declarations
 ***********************************************************************************************************************/
 static void UserApp1SM_Idle(void);    
 static void UserApp1SM_Error(void);         
-
+void shoot(void);
+void placement(void);
+void endGame();
+int sendShot(int x, int y);
 
 
 /**********************************************************************************************************************
