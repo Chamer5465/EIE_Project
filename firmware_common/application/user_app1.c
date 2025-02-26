@@ -530,7 +530,7 @@ static void UserApp1SM_WaitAntReady(void) {
 /* Hold here until ANT Confirms channel is open*/
 static void UserApp1SM_WaitChannelOpen(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN)
-    UserApp1_pfStateMachine = UserApp1SM_Idle;
+    UserApp1_pfStateMachine = UserApp1SM_Idle; // Advance state machine
 } /* end UserApp1SM_WaitChannelOpen() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
