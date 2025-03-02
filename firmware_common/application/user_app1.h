@@ -53,7 +53,9 @@ void UserApp1RunActiveState(void);
 State Machine Declarations
 ***********************************************************************************************************************/
 static void UserApp1SM_Idle(void);    
-static void UserApp1SM_Error(void);         
+static void UserApp1SM_Error(void);
+static void UserApp1SM_WaitAntReady(void);
+static void UserApp1SM_WaitChannelOpen(void);        
 void shoot(void);
 void placement(void);
 void endGame();

@@ -70,6 +70,7 @@ int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int x = 0;
 int currentBoardState = 0;
+int placementBoardStates[3];
 int xPrev = 0;
 int yPrev = 0;
 int y = 0;
@@ -378,76 +379,114 @@ State Machine Function Definitions
 /* Placement of ships at the beginning of the game */
 void placement() {
     if (ship == 0) {
-        board[y][x] = 1; 
-        if (x != xPrev || y != yPrev) {
+        board[y][x] = 1;
+        if (xPrev != x || yPrev != y) {
             board[yPrev][xPrev] = 5;
             xPrev = x;
             yPrev = y;
         }
-    } else if (ship == 1 && board[y][x] > 1 && ((x > 6 && board[y][x - 1] > 1) || (x <= 6 && board[y][x + 1] > 1))) {
+    } else if (ship == 1) {
+        placementBoardStates[0] = board[y][x];
         board[y][x] = 2;
         if (x > 6) {
-            board[y][x - 1] = 2;
-            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 1 && board[yPrev][xPrev - 1] > 1) {
-                board[yPrev][xPrev] = 5;
-                board[yPrev][xPrev - 1] = 5;
-                xPrev = x;
-                yPrev = y;
-            }
+            placementBoardStates[1] = board[y][x-1];
+            board[y][x-1] = 2;
         } else {
-            board[y][x + 1] = 2;
-            if (x != xPrev || y != yPrev) {
-                board[yPrev][xPrev] = 5;
-                board[yPrev][xPrev + 1] = 5;
-                xPrev = x;
-                yPrev = y;
-            } 
+            placementBoardStates[1] = board[y][x+1];
+            board[y][x+1] = 2;
         }
-    } else if (ship == 2 && board[y][x] > 2 && ((x > 5 && board[y][x - 1] > 2 && board[y][x - 2] > 2) || (x <= 5 && board[y][x + 1] > 2 && board[y][x + 2] > 2))) {
+        for (int i = 0; i < 2; i++) {
+            if (placementBoardStates[i] == 2) {
+                placementBoardStates[i] = 5;
+            }
+        }
+        if (xPrev != x || yPrev != y) {
+            board[yPrev][xPrev] = placementBoardStates[0];
+            if (xPrev > 6) {
+                board[yPrev][xPrev-1] = placementBoardStates[1];
+            } else {
+                board[yPrev][xPrev+1] = placementBoardStates[1];
+            }
+            xPrev = x;
+            yPrev = y;
+        }
+    } else if (ship == 2) {
+        placementBoardStates[0] = board[y][x];
         board[y][x] = 3;
-        if (x > 5) {
-            board[y][x - 1] = 3;
-            board[y][x - 2] = 3;
-            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 2 && board[yPrev][xPrev - 1] > 2 && board[yPrev][xPrev - 2] > 2) {
-                board[yPrev][xPrev] = 5;
-                board[yPrev][xPrev - 1] = 5;
-                board[yPrev][xPrev - 2] = 5;
-                xPrev = x;
-                yPrev = y;
-            }
+        if (x == 6) {
+            placementBoardStates[1] = board[y][x-1];
+            placementBoardStates[2] = board[y][x+1];
+            board[y][x-1] = 3;
+            board[y][x+1] = 3;
+        } else if (x == 7) {
+            placementBoardStates[1] = board[y][x-1];
+            placementBoardStates[2] = board[y][x-2];
+            board[y][x-1] = 3;
+            board[y][x-2] = 3;
         } else {
-            board[y][x + 1] = 3;
-            board[y][x + 2] = 3;
-            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 2 && board[yPrev][xPrev + 1] > 2 && board[yPrev][xPrev + 2] > 2) {
-                board[yPrev][xPrev] = 5;
-                board[yPrev][xPrev + 1] = 5;
-                board[yPrev][xPrev + 2] = 5;
-                xPrev = x;
-                yPrev = y;
+            placementBoardStates[1] = board[y][x+1];
+            placementBoardStates[2] = board[y][x+2];
+            board[y][x+1] = 3;
+            board[y][x+2] = 3;
+        }
+        for (int i = 0; i < 3; i++) {
+            if (placementBoardStates[i] == 3) {
+                placementBoardStates[i] = 5;
             }
         }
-    } else if (ship == 3 && board[y][x] > 3  && ((x > 5 && board[y][x - 1] > 3 && board[y][x - 2] > 3) || (x <= 5 && board[y][x + 1] > 3 && board[y][x + 2] > 3))) {
+        if (xPrev != x || yPrev != y) {
+            board[yPrev][xPrev] = placementBoardStates[0];
+            if (xPrev == 6) {
+                board[yPrev][xPrev-1] = placementBoardStates[1];
+                board[yPrev][xPrev+1] = placementBoardStates[2];
+            } else if (xPrev == 7) {
+                board[yPrev][xPrev-1] = placementBoardStates[1];
+                board[yPrev][xPrev-2] = placementBoardStates[2];
+            } else {
+                board[yPrev][xPrev+1] = placementBoardStates[1];
+                board[yPrev][xPrev+2] = placementBoardStates[2];
+            }
+            xPrev = x;
+            yPrev = y;
+        }
+    } else if (ship == 3) {
+        placementBoardStates[0] = board[y][x];
         board[y][x] = 4;
-        if (x > 5) {
-            board[y][x - 1] = 4;
-            board[y][x - 2] = 4;
-            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 3 && board[yPrev][xPrev - 1] > 3 && board[yPrev][xPrev - 2] > 3) {
-                board[yPrev][xPrev] = 5;
-                board[yPrev][xPrev - 1] = 5;
-                board[yPrev][xPrev - 2] = 5;
-                xPrev = x;
-                yPrev = y;
-            }
+        if (x == 6) {
+            placementBoardStates[1] = board[y][x-1];
+            placementBoardStates[2] = board[y][x+1];
+            board[y][x-1] = 4;
+            board[y][x+1] = 4;
+        } else if (x == 7) {
+            placementBoardStates[1] = board[y][x-1];
+            placementBoardStates[2] = board[y][x-2];
+            board[y][x-1] = 4;
+            board[y][x-2] = 4;
         } else {
-            board[y][x + 1] = 1;
-            board[y][x + 2] = 1;
-            if ((x != xPrev || y != yPrev) && board[yPrev][xPrev] > 3 && board[yPrev][xPrev + 1] > 3 && board[yPrev][xPrev + 2] > 3) {
-                board[yPrev][xPrev] = 5;
-                board[yPrev][xPrev + 1] = 5;
-                board[yPrev][xPrev + 2] = 5;
-                xPrev = x;
-                yPrev = y;
+            placementBoardStates[1] = board[y][x+1];
+            placementBoardStates[2] = board[y][x+2];
+            board[y][x+1] = 4;
+            board[y][x+2] = 4;
+        }
+        for (int i = 0; i < 3; i++) {
+            if (placementBoardStates[i] == 4) {
+                placementBoardStates[i] = 5;
             }
+        }
+        if (xPrev != x || yPrev != y) {
+            board[yPrev][xPrev] = placementBoardStates[0];
+            if (xPrev == 6) {
+                board[yPrev][xPrev-1] = placementBoardStates[1];
+                board[yPrev][xPrev+1] = placementBoardStates[2];
+            } else if (xPrev == 7) {
+                board[yPrev][xPrev-1] = placementBoardStates[1];
+                board[yPrev][xPrev-2] = placementBoardStates[2];
+            } else {
+                board[yPrev][xPrev+1] = placementBoardStates[1];
+                board[yPrev][xPrev+2] = placementBoardStates[2];
+            }
+            xPrev = x;
+            yPrev = y;
         }
     }
 }
@@ -542,30 +581,34 @@ void endGame() {
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* THIS STATE IS USELESS AND MUST BE REMOVED */
 static void UserApp1SM_Idle(void) {
-    if (placementState) {
+    if (placementState ) {
         if (ship > 3) {
             placementState = FALSE;
         } else {
             placement();
-            if (WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) {
-                ButtonAcknowledge(BUTTON0);
-                ButtonAcknowledge(BUTTON1);
-                ship++;
+        }
+    }
+    if (WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) {
+        ButtonAcknowledge(BUTTON0);
+        ButtonAcknowledge(BUTTON1);
+        ship++;
+    }
+    if(IsButtonHeld(BUTTON0, 50)) {
+        if (WasButtonPressed(BUTTON0)) {
+            ButtonAcknowledge(BUTTON0);
+            x++;
+            if (x > 7) {
+                x = 0;
             }
         }
     }
-    if(WasButtonPressed(BUTTON0)) {
-        ButtonAcknowledge(BUTTON0);
-        x++;
-        if (x > 7) {
-            x = 0;
-        }
-    }
-    if(WasButtonPressed(BUTTON1)) {
-        ButtonAcknowledge(BUTTON1);
-        y++;
-        if (y > 3) {
-            y = 0;
+    if(IsButtonHeld(BUTTON1, 50)) {
+        if (WasButtonPressed(BUTTON1)) {
+            ButtonAcknowledge(BUTTON1);
+            y++;
+            if (y > 3) {
+                y = 0;
+            }
         }
     }
     
