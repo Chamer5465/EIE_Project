@@ -31,7 +31,7 @@ Function Declarations
 /*! @publicsection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
 
-void displayBoard();
+void displayBoard(int gameboard[4][8]);
 void checkHit(u8 shot);
 void checkHealth();
 

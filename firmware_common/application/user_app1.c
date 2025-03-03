@@ -68,13 +68,12 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
+int shootBoard[4][8] = {{0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}};
 int x = 0;
 int currentBoardState = 0;
-int placementBoardStates[3];
 int xPrev = 0;
 int yPrev = 0;
 int y = 0;
-int rotation = 0;
 int ship = 0;
 bool placementState = TRUE;
 static fnCode_type UserApp1_pfStateMachine;                 /*!< @brief The state machine function pointer */
@@ -116,7 +115,7 @@ Function Definitions
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Displays ships on the board */
-void displayBoard() {
+void displayBoard(int gameboard[4][8]) {
   PixelBlockType targetBlock;
   targetBlock.u16RowSize = 14;
   targetBlock.u16ColumnSize = 14;
@@ -124,13 +123,13 @@ void displayBoard() {
       for (int j = 0; j < 8; j++) {
           targetBlock.u16RowStart = i * 16 + 1;
               targetBlock.u16ColumnStart = j * 16 + 1;
-          if (board[i][j] > 0 && board[i][j] < 5) {
+          if (gameboard[i][j] > 0 && board[i][j] < 5) {
               LcdClearPixels(&targetBlock);
               LcdLoadBitmap(&aau8BlackBox[0][0], &targetBlock);
-          } else if (board[i][j] == 0) {
+          } else if (gameboard[i][j] == 0) {
               LcdClearPixels(&targetBlock);
               LcdLoadBitmap(&aau8CrossOut[0][0], &targetBlock);
-          } else if (board[i][j] == 6){
+          } else if (gameboard[i][j] == 6){
               LcdClearPixels(&targetBlock);
               LcdLoadBitmap(&aau8Target[0][0], &targetBlock);
           } else {
@@ -217,7 +216,7 @@ int y = (shot % 8);
 // Check if the spot was occupied ie) not == 5
 if (board[x][y] != 5 ) 
   board[x][y] = 0; // Mark as hit
-displayBoard(); // Update board
+displayBoard(board); // Update board
 checkHealth(); // Update ship health and continue state machine in further function
 } /* end checkHit() */
 
@@ -379,7 +378,7 @@ State Machine Function Definitions
 /* Placement of ships at the beginning of the game */
 void placement() {
     if (ship > 3) {
-        UserApp1_pfStateMachine = UserApp1SM_Idle;
+        UserApp1_pfStateMachine = shoot;
     }
     if (WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) {
         ButtonAcknowledge(BUTTON0);
@@ -441,7 +440,7 @@ void placement() {
                 }
             }
         }
-        if ((board[y][x] != 5 && board[y][x] != 3) || (((board[y][x-1] != 5 && board[y][x-1] != 3) || (board[y][x-2] != 5 && board[y][x-2] != 3)) && x == 7) || (((board[y][x-1] != 5 && board[y][x-1] != 3) || (board[y][x+1] != 5 && board[y][x+1] != 3)) && x == 6) || (((board[y][x+1] != 5 && board[y][x+1] != 3) || (board[y][x+2] != 5 && board[y][x+2] != 3) && x < 6))) {
+        if ((board[y][x] != 5 && board[y][x] != 3) || (((board[y][x-1] != 5 && board[y][x-1] != 3) || (board[y][x-2] != 5 && board[y][x-2] != 3)) && x == 7) || (((board[y][x-1] != 5 && board[y][x-1] != 3) || (board[y][x+1] != 5 && board[y][x+1] != 3)) && x == 6) || (((board[y][x+1] != 5 && board[y][x+1] != 3) || (board[y][x+2] != 5 && board[y][x+2] != 3)) && x < 6)) {
             x++;
             if (x > 7) {
                 x = 0;
@@ -486,22 +485,22 @@ void placement() {
             }
         }
     }
-    displayBoard();
+    displayBoard(board);
 }
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Allows user to select a space to shoot enemy when it's their turn */
 void shoot() {
     if (x != xPrev || y != yPrev) { // Deletes previous sprite
-        board[yPrev][xPrev] = currentBoardState; // Uses previous board state
+        shootBoard[yPrev][xPrev] = 0; // Uses previous board state
         xPrev = x;
         yPrev = y;
     }
     if(WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) { // Checks if both button are pressed at the same time
         ButtonAcknowledge(BUTTON0);
         ButtonAcknowledge(BUTTON1);
-        board[y][x] = 0; // Board code 0 is an X
-        displayBoard(); // Update board to reflect this
+        shootBoard[y][x] = 2; // Board code 0 is an X
+        displayBoard(shootBoard); // Update board to reflect this
         UserApp1_pfStateMachine = sendShot(x, y); // Continue state machine
     }
     if(IsButtonHeld(BUTTON0, 50)) { // Checks if button is held for 50ms to give both button hit priority
@@ -512,7 +511,7 @@ void shoot() {
                 x = 0;
             }
             currentBoardState = board[y][x]; // Saves board type to not overwrite other things
-            board[y][x] = 6; // board code 6 is a target
+            shootBoard[y][x] = 1; // board code 6 is a target
         }
     }
     if(IsButtonHeld(BUTTON1, 50)) { // Checks if button is held for 50ms to give both button hit priority
@@ -523,10 +522,10 @@ void shoot() {
                 y = 0;
             }
             currentBoardState = board[y][x]; // Saves board type to not overwrite other things
-            board[y][x] = 6; // board code 6 is a target
+            shootBoard[y][x] = 1; // board code 6 is a target
         }
     }
-  displayBoard();
+  displayBoard(shootBoard);
 } /* end shoot() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
