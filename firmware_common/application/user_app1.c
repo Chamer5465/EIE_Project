@@ -65,7 +65,8 @@ Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
 
-int isANTMaster = 1; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
+// Added this comment to keep the formatting we had with indents but at the same time make int isANTMaster on line 69 as it's an easy line to remember for debugging
+int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int shootBoard[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
@@ -569,6 +570,7 @@ int sendShot(int longitude, int latitude) {
 
     if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CLOSED) {
       AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
+      UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen;
     }
     
     if (AntReadAppMessageBuffer()) {
