@@ -330,7 +330,7 @@ void UserApp1Initialize(void)
     targetPixel.u16PixelColumnAddress = 127;
     LcdSetPixel(&targetPixel);
   }
-  /* If good initialization, set state to WaitAntReady */
+  /* If good initialization, set state to UserApp1SM_WaitAntReady */
   if( 1 )
   {
     UserApp1_pfStateMachine = UserApp1SM_WaitAntReady;
@@ -361,7 +361,6 @@ Promises:
 */
 void UserApp1RunActiveState(void)
 {
-  UserApp1SM_ClearAntData();
   UserApp1_pfStateMachine();
 
 } /* end UserApp1RunActiveState */
@@ -506,9 +505,10 @@ void shoot() {
         ButtonAcknowledge(BUTTON0);
         ButtonAcknowledge(BUTTON1);
         shootBoard[y][x] = 0; // Board code 0 is an X
+        currentBoardState = shootBoard[y][x]; // Saves X for future function
         displayBoard(shootBoard); // Update board to reflect this
-        sendShot(x, y);
-        UserApp1_pfStateMachine = sendShot; // Continue state machine
+        AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
+        UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen; // Continue state machine
     }
     if(IsButtonHeld(BUTTON0, 50)) { // Checks if button is held for 50ms to give both button hit priority
         if(WasButtonPressed(BUTTON0)) { // If the button is held this function does not loop preventing executing movement too many times
@@ -547,6 +547,7 @@ int sendShot(int longitude, int latitude) {
     if(AntReadAppMessageBuffer()) {
       displayBoard(board);
       if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes[3] != lastShot) {
+        AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
         /* We got returning fire check the data in checkHit */
         lastShot = G_au8AntApiCurrentMessageBytes[3]; // Set new lastShot
         checkHit(G_au8AntApiCurrentMessageBytes[3]); // Continue state machine in further function
@@ -618,7 +619,7 @@ int sendShot(int longitude, int latitude) {
 static void UserApp1SM_WaitAntReady(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CONFIGURED) {
     if(AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP)) {
-      UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen;
+      UserApp1_pfStateMachine = placement;
     } else {
       UserApp1_pfStateMachine = UserApp1SM_Error;
     }
@@ -629,25 +630,10 @@ static void UserApp1SM_WaitAntReady(void) {
 /* Hold here until ANT Confirms channel is open*/
 static void UserApp1SM_WaitChannelOpen(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
-    
-    UserApp1_pfStateMachine = placement; // Advance state machine
+    sendShot(x, y);
+    UserApp1_pfStateMachine = sendShot; // Advance state machine
   }
 } /* end UserApp1SM_WaitChannelOpen() */
-
-/*-------------------------------------------------------------------------------------------------------------------*/
-/* Clear ANT Data to Prevent Error */
-static void UserApp1SM_ClearAntData(void) {
-  if(AntReadAppMessageBuffer()) {
-    AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage);
-
-    au8AntMessage[7]++; // Increment message counter for debug
-    if(au8AntMessage[7] == 0) {
-      au8AntMessage[6]++;
-      if(au8AntMessage[6] == 0) 
-        au8AntMessage[5]++;
-    }
-  }
-}
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* When all ships have no health alert other board of defeat */
