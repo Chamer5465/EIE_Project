@@ -77,7 +77,6 @@ int y = 0;
 int ship = 0;
 bool placementState = TRUE;
 static fnCode_type UserApp1_pfStateMachine;                 /*!< @brief The state machine function pointer */
-static u32 UserApp1_u32Timeout;                             /*!< @brief Timeout counter used across states */
 static u32 UserApp1_u32DataMsgCount = 0;                    /* ANT_DATA packet counter */
 static u32 UserApp1_u32TickMsgCount = 0;                    /* ANT TICK packet counter */
 static u8 au8AntMessage[] =  {0, 0, 0, 0xFF, 0xA5, 0, 0, 0};  /* ANT Default Message */
@@ -250,7 +249,7 @@ void UserApp1Initialize(void)
   {
     if (isANTMaster == 1) { // Uses following settings if board deemed master
       sChannelInfo.AntChannelType = CHANNEL_TYPE_MASTER;
-    } else { // Uses following settings if board deemed slave
+    } else if (isANTMaster == 0 ){ // Uses following settings if board deemed slave
       sChannelInfo.AntChannelType = CHANNEL_TYPE_SLAVE;
     }
 
@@ -362,6 +361,7 @@ Promises:
 */
 void UserApp1RunActiveState(void)
 {
+  UserApp1SM_ClearAntData();
   UserApp1_pfStateMachine();
 
 } /* end UserApp1RunActiveState */
@@ -379,7 +379,6 @@ State Machine Function Definitions
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Placement of ships at the beginning of the game */
 void placement() {
-    UserApp1SM_ClearAntData();
     if (ship > 3) {
         if (isANTMaster == 1) {
             UserApp1_pfStateMachine = shoot; // If Ant Master it's your turn first
@@ -499,7 +498,6 @@ void placement() {
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Allows user to select a space to shoot enemy when it's their turn */
 void shoot() {
-    UserApp1SM_ClearAntData();
     if (x != xPrev || y != yPrev) { // Sets new xPrev and yPrev
         xPrev = x;
         yPrev = y;
@@ -547,6 +545,7 @@ int sendShot(int longitude, int latitude) {
   au8AntMessage[3] = latitude * 8 + longitude; // Converts coordinates to decimal
   if (isANTMaster == 1) { // Check if Master or Slave
     if(AntReadAppMessageBuffer()) {
+      displayBoard(board);
       if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes[3] != lastShot) {
         /* We got returning fire check the data in checkHit */
         lastShot = G_au8AntApiCurrentMessageBytes[3]; // Set new lastShot
@@ -639,28 +638,15 @@ static void UserApp1SM_WaitChannelOpen(void) {
 /* Clear ANT Data to Prevent Error */
 static void UserApp1SM_ClearAntData(void) {
   if(AntReadAppMessageBuffer()) {
-    if(G_eAntApiCurrentMessageClass == ANT_DATA) {
-      /* A channel period has gone by */
-      AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage);
+    AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage);
 
-      au8AntMessage[7]++; // Increment message counter for debug
-      if(au8AntMessage[7] == 0) {
-        au8AntMessage[6]++;
-        if(au8AntMessage[6] == 0) 
-          au8AntMessage[5]++;
-      }
-    } else if (G_eAntApiCurrentMessageClass == ANT_TICK) {
-      /* A channel period has gone by */
-      AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage);
-
-      au8AntMessage[7]++; // Increment message counter for debug
-      if(au8AntMessage[7] == 0) {
-        au8AntMessage[6]++;
-        if(au8AntMessage[6] == 0) 
-          au8AntMessage[5]++;
-      }
-    } /* End ANT_TICK */
-  } /* End ReadAppMessage Buffer */
+    au8AntMessage[7]++; // Increment message counter for debug
+    if(au8AntMessage[7] == 0) {
+      au8AntMessage[6]++;
+      if(au8AntMessage[6] == 0) 
+        au8AntMessage[5]++;
+    }
+  }
 }
 
 /*-------------------------------------------------------------------------------------------------------------------*/
