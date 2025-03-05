@@ -66,7 +66,7 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
 
 // Added this comment to keep the formatting we had with indents but at the same time make int isANTMaster on line 69 as it's an easy line to remember for debugging
-int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
+int isANTMaster = 1; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int shootBoard[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
@@ -76,12 +76,14 @@ int xPrev = 0;
 int yPrev = 0;
 int y = 0;
 int ship = 0;
+int firstRun = 0;
 bool placementState = TRUE;
 static fnCode_type UserApp1_pfStateMachine;                 /*!< @brief The state machine function pointer */
 static u32 UserApp1_u32DataMsgCount = 0;                    /* ANT_DATA packet counter */
 static u32 UserApp1_u32TickMsgCount = 0;                    /* ANT TICK packet counter */
 static u8 au8AntMessage[] =  {0, 0, 0, 0xFF, 0xA5, 0, 0, 0};  /* ANT Default Message */
-static u8 lastShot = 0xFF;
+static u8 lastShot = 0xFF; /* Stops multiple data transfers from occuring */
+static u8 hexShot = 0xFF; /* Ensures ANT slave in idle mode won't be picked up by ANT Master */
 
 /**********************************************************************************************************************
 Dictionary
@@ -379,11 +381,16 @@ State Machine Function Definitions
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Placement of ships at the beginning of the game */
 void placement() {
+    if (firstRun == 0) { // If it's the first run after initialization disable ANT to avoid errors
+        if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
+            AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
+            firstRun++;
+        }
+    }
     if (ship > 3) {
         if (isANTMaster == 1) {
             UserApp1_pfStateMachine = shoot; // If Ant Master it's your turn first
         } else if (isANTMaster == 0) {
-            sendShot(69, 69);
             UserApp1_pfStateMachine = sendShot; // If Ant Slave it's your turn second, enter sendShot with incompatible coordinates
         }
     }
@@ -508,6 +515,7 @@ void shoot() {
         shootBoard[y][x] = 0; // Board code 0 is an X
         currentBoardState = shootBoard[y][x]; // Saves X for future function
         displayBoard(shootBoard); // Update board to reflect this
+        hexShot = y * 8 + x; // Converts coordinates to decimal for sendShot
         AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
         UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen; // Continue state machine
     }
@@ -542,8 +550,8 @@ void shoot() {
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Using ANT: Sends shot location, recieves confirmation of hit */
-int sendShot(int longitude, int latitude) {
-  au8AntMessage[3] = latitude * 8 + longitude; // Converts coordinates to decimal
+void sendShot() {
+  au8AntMessage[3] = hexShot; // puts shot location into Ant message
   if (isANTMaster == 1) { // Check if Master or Slave
     if(AntReadAppMessageBuffer()) {
       displayBoard(board);
@@ -565,17 +573,18 @@ int sendShot(int longitude, int latitude) {
       } /* End ANT_TICK */
     } /* End ReadAppMessage Buffer */
   } else if (isANTMaster == 0) {
-    static u8 au8LastAntData[ANT_APPLICATION_MESSAGE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    static u8 au8LastAntData[ANT_APPLICATION_MESSAGE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, };
     bool bGotNewData;
 
     if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CLOSED) {
       AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
       UserApp1_pfStateMachine = UserApp1SM_WaitChannelOpen;
     }
-    
+
     if (AntReadAppMessageBuffer()) {
+      displayBoard(board);
       if(G_eAntApiCurrentMessageClass == ANT_DATA) {
-        /* We got some data! Check if it is a valid shot */
+        /* We got some data! Check what it is */
         UserApp1_u32DataMsgCount++;
   
         /*Check if the new data is the same as the old data and update as we go */
@@ -588,30 +597,30 @@ int sendShot(int longitude, int latitude) {
         }
   
         if(bGotNewData){
-          /* Update our local message counter */
+          /* we got new data: check if it's a valid shot*/
+          if(G_au8AntApiCurrentMessageBytes[3] != lastShot && G_au8AntApiCurrentMessageBytes[4] == au8AntMessage[4]) { // Checks for missent Data and makes sure not recieving old data
+            AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
+            /* We got returning fire check the data in checkHit */
+            lastShot = G_au8AntApiCurrentMessageBytes[3]; // Set new lastShot
+            checkHit(G_au8AntApiCurrentMessageBytes[3]); // Continue state machine in further function
+          }
+
+          /* Update our local message counter and send the message back */
           au8AntMessage[7]++;
           if(au8AntMessage[7] == 0) {
             au8AntMessage[6]++;
             if(au8AntMessage[7] == 0)
               au8AntMessage[5]++;
           }
-  
-          /* Check if new coordinates were sent */
-          if(G_au8AntApiCurrentMessageBytes[3] != lastShot) {
-            /* We got returning fire check the data in checkHit */
-            lastShot = G_au8AntApiCurrentMessageBytes[3]; // Set new lastShot
-            checkHit(G_au8AntApiCurrentMessageBytes[3]); // Continue state machine in further function
-          }
 
-          /* Send data */
           AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage);
 
         } /* end if(bgotnewdata) */
       } else if ( G_eAntApiCurrentMessageClass == ANT_TICK) {
-        UserApp1_u32TickMsgCount++; /* A channel period has gone by*/
-
+        /* A channel period has gone by*/
+        UserApp1_u32TickMsgCount++;
       } /* end ANT_TICK */
-    } /* end AntReadMessageBuffer */
+    } /* end AntReadAppMessageBuffer()*/
   } /* end isAntMaster*/
 } /* end sendShot() */
 
@@ -632,7 +641,6 @@ static void UserApp1SM_WaitAntReady(void) {
 /* Hold here until ANT Confirms channel is open*/
 static void UserApp1SM_WaitChannelOpen(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
-    sendShot(x, y);
     UserApp1_pfStateMachine = sendShot; // Advance state machine
   }
 } /* end UserApp1SM_WaitChannelOpen() */
