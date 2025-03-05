@@ -66,7 +66,7 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
 
 // Added this comment to keep the formatting we had with indents but at the same time make int isANTMaster on line 69 as it's an easy line to remember for debugging
-int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
+int isANTMaster = 1; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int shootBoard[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
