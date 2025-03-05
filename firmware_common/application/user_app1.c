@@ -66,7 +66,7 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
 
 // Added this comment to keep the formatting we had with indents but at the same time make int isANTMaster on line 69 as it's an easy line to remember for debugging
-int isANTMaster = 1; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
+int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int shootBoard[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
@@ -78,12 +78,13 @@ int y = 0;
 int ship = 0;
 int firstRun = 0;
 bool placementState = TRUE;
-static fnCode_type UserApp1_pfStateMachine;                 /*!< @brief The state machine function pointer */
-static u32 UserApp1_u32DataMsgCount = 0;                    /* ANT_DATA packet counter */
-static u32 UserApp1_u32TickMsgCount = 0;                    /* ANT TICK packet counter */
+static fnCode_type UserApp1_pfStateMachine;                   /*!< @brief The state machine function pointer */
+static u32 UserApp1_u32Timeout;                               /*!< @brief Timeout counter used across states */ 
+static u32 UserApp1_u32DataMsgCount = 0;                      /* ANT_DATA packet counter */
+static u32 UserApp1_u32TickMsgCount = 0;                      /* ANT TICK packet counter */
 static u8 au8AntMessage[] =  {0, 0, 0, 0xFF, 0xA5, 0, 0, 0};  /* ANT Default Message */
-static u8 lastShot = 0xFF; /* Stops multiple data transfers from occuring */
-static u8 hexShot = 0xFF; /* Ensures ANT slave in idle mode won't be picked up by ANT Master */
+static u8 lastShot = 0xFF;                                    /* Stops multiple data transfers from occuring */
+static u8 hexShot = 0xFF;                                     /* Ensures ANT slave in idle mode won't be picked up by ANT Master */
 
 /**********************************************************************************************************************
 Dictionary
@@ -217,10 +218,16 @@ int x = shot/8;
 int y = (shot % 8);
 
 // Check if the spot was occupied ie) not == 5
-if (board[x][y] != 5 ) 
+if (board[x][y] != 5 ) {
   board[x][y] = 0; // Mark as hit
-displayBoard(board); // Update board
-checkHealth(); // Update ship health and continue state machine in further function
+  displayBoard(board); // Update board
+  UserApp1_u32Timeout = G_u32SystemTime1ms;
+  UserApp1_pfStateMachine = shockingFunction;
+} else {
+  displayBoard(board); // Update board
+  checkHealth(); // Update ship health and continue state machine in further function
+}
+  
 } /* end checkHit() */
 
 
@@ -333,6 +340,12 @@ void UserApp1Initialize(void)
     targetPixel.u16PixelColumnAddress = 127;
     LcdSetPixel(&targetPixel);
   }
+
+   /* Initializes Shocking Function */
+  BladeRequestPin(BLADE_PIN0, DIGITAL_OUT);
+  AT91C_BASE_PIOB->PIO_PER = PB_03_BLADE_AN0;
+  AT91C_BASE_PIOB->PIO_OER = PB_03_BLADE_AN0;
+
   /* If good initialization, set state to UserApp1SM_WaitAntReady */
   if( 1 )
   {
@@ -652,10 +665,14 @@ void endGame() {
 } /* End endGame() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
-/* THIS STATE IS USELESS AND MUST BE REMOVED */
-static void UserApp1SM_Idle(void) {
-
-} /* end UserApp1SM_Idle() */
+/* This function might shock you */
+void shockingFunction() {
+  AT91C_BASE_PIOB->PIO_SODR = PB_03_BLADE_AN0; // Set relay high
+  if (IsTimeUp(&UserApp1_u32Timeout, (u32) 2000)) {
+    AT91C_BASE_PIOB->PIO_CODR = PB_03_BLADE_AN0; // Set relay low
+    checkHealth(); // Update ship health and continue state machine in further function
+  } 
+} /* end shockingFunction() */
      
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Handle an error */

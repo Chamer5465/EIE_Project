@@ -61,6 +61,7 @@ void shoot(void);
 void placement(void);
 void endGame(void);
 void sendShot(void);
+void shockingFunction(void);
 
 
 /**********************************************************************************************************************
