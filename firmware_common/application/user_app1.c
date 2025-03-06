@@ -228,11 +228,11 @@ void checkHealth() {
           if (board[i][j] == 1) {
               ship1++;
           } else if(board[i][j] == 2) {
-              //ship2++;
+              ship2++;
           } else if(board[i][j] == 3) {
-              //ship3++;
+              ship3++;
           } else if(board[i][j] == 4) {
-              //ship4++;
+              ship4++;
           }
       }
   }
@@ -584,6 +584,7 @@ void placement() {
         }
     }
     displayBoard(board);
+
 }
 
 /*-------------------------------------------------------------------------------------------------------------------*/
@@ -630,6 +631,7 @@ void shoot() {
         }
     }
   displayBoard(shootBoard);
+
 } /* end shoot() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
@@ -722,6 +724,7 @@ void sendShot() {
       } /* end endgame flag*/
     } /* end AntReadAppMessageBuffer()*/
   } /* end isAntMaster*/
+
 } /* end sendShot() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
@@ -734,6 +737,7 @@ static void UserApp1SM_WaitAntReady(void) {
       UserApp1_pfStateMachine = UserApp1SM_Error;
     }
   }
+
 } /* end UserApp1SM_WaitAntReady() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
@@ -742,6 +746,7 @@ static void UserApp1SM_WaitChannelOpen(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
     UserApp1_pfStateMachine = sendShot; // Advance state machine
   }
+
 } /* end UserApp1SM_WaitChannelOpen() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
@@ -800,7 +805,8 @@ void shockingFunction() {
   if (IsTimeUp(&UserApp1_u32Timeout, (u32) 2000)) {
     AT91C_BASE_PIOB->PIO_CODR = PB_03_BLADE_AN0; // Set relay low
     checkHealth(); // Update ship health and continue state machine in further function
-  } 
+  }
+
 } /* end shockingFunction() */
      
 /*-------------------------------------------------------------------------------------------------------------------*/
