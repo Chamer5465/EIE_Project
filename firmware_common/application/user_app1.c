@@ -59,6 +59,13 @@ extern AntApplicationMessageType G_eAntApiCurrentMessageClass;            // Fro
 extern u8 G_au8AntApiCurrentMessageBytes[ANT_APPLICATION_MESSAGE_BYTES];  // From ant_api.c
 extern AntExtendedDataType G_sAntApiCurrentMessageExtData;                // From ant_api.c
 
+/* LCD */
+static PixelAddressType sStringLocation;                          /* From lcd-NHD-C12864LZ.c */
+extern PixelAddressType G_sLcdClearLine2;                         /* From lcd-NHD-C12864LZ.c */
+extern PixelAddressType G_sLcdClearLine3;                         /* From lcd-NHD-C12864LZ.c */
+extern PixelAddressType G_sLcdClearLine4;                         /* From lcd-NHD-C12864LZ.c */
+extern PixelAddressType G_sLcdClearLine5;                         /* From lcd-NHD-C12864LZ.c */
+
 
 /***********************************************************************************************************************
 Global variable definitions with scope limited to this local application.
@@ -77,6 +84,7 @@ int yPrev = 0;
 int y = 0;
 int ship = 0;
 int firstRun = 0;
+int winner = 0;
 bool placementState = TRUE;
 static fnCode_type UserApp1_pfStateMachine;                   /*!< @brief The state machine function pointer */
 static u32 UserApp1_u32Timeout;                               /*!< @brief Timeout counter used across states */ 
@@ -100,8 +108,11 @@ Board States:
 6 = Target
 
 au8AntMessage:
-au8AntMessage[4] = 0xFF Defeat
+au8AntMessage[4] = 0xA5 Is a placeholder to make sure data isn't random between boards
+au8AntMessage[4] = 0x69 Defeat
+
 au8AntMessage[3] = 0xFF Placeholder to make sure slave doesn't send any data initially and just waits for signal
+
 au8AntMessage[5-7] Represnt the message number being sent
 
 */ 
@@ -219,11 +230,11 @@ void checkHealth() {
           if (board[i][j] == 1) {
               ship1++;
           } else if(board[i][j] == 2) {
-              ship2++;
+              //ship2++;
           } else if(board[i][j] == 3) {
-              ship3++;
+              //ship3++;
           } else if(board[i][j] == 4) {
-              ship4++;
+              //ship4++;
           }
       }
   }
@@ -284,6 +295,7 @@ void checkHealth() {
       LedOff(BLUE3);
   }
   if (ship1 == 0 && ship2 == 0 && ship3 == 0 && ship4 == 0) {
+    LcdClearScreen();
     UserApp1_pfStateMachine = endGame; // End Game
   } else {
     UserApp1_pfStateMachine = shoot; // Continue State Machine
@@ -310,6 +322,32 @@ if (board[x][y] != 5 ) {
   
 } /* end checkHit() */
 
+/*-------------------------------------------------------------------------------------------------------------------*/
+/* Displays message on line 2, 3, 4, or 5 in small font */
+void displayMessage(u8 message[], int line) {
+  if (line == 2) {
+    LcdClearPixels(&G_sLcdClearLine2);
+    sStringLocation.u16PixelColumnAddress = U16_LCD_CENTER_COLUMN - ( strlen((char const*)message) * (U8_LCD_SMALL_FONT_COLUMNS + U8_LCD_SMALL_FONT_SPACE) / 2);
+    sStringLocation.u16PixelRowAddress = U8_LCD_SMALL_FONT_LINE2;
+    LcdLoadString(message, LCD_FONT_SMALL, &sStringLocation);
+  } else if (line == 3) {
+    LcdClearPixels(&G_sLcdClearLine3);
+    sStringLocation.u16PixelColumnAddress = U16_LCD_CENTER_COLUMN - ( strlen((char const*)message) * (U8_LCD_SMALL_FONT_COLUMNS + U8_LCD_SMALL_FONT_SPACE) / 2);
+    sStringLocation.u16PixelRowAddress = U8_LCD_SMALL_FONT_LINE3;
+    LcdLoadString(message, LCD_FONT_SMALL, &sStringLocation);
+  } else if (line == 4) {
+    LcdClearPixels(&G_sLcdClearLine4);
+    sStringLocation.u16PixelColumnAddress = U16_LCD_CENTER_COLUMN - ( strlen((char const*)message) * (U8_LCD_SMALL_FONT_COLUMNS + U8_LCD_SMALL_FONT_SPACE) / 2);
+    sStringLocation.u16PixelRowAddress = U8_LCD_SMALL_FONT_LINE4;
+    LcdLoadString(message, LCD_FONT_SMALL, &sStringLocation);
+  } else if (line == 5) {
+    LcdClearPixels(&G_sLcdClearLine5);
+    sStringLocation.u16PixelColumnAddress = U16_LCD_CENTER_COLUMN - ( strlen((char const*)message) * (U8_LCD_SMALL_FONT_COLUMNS + U8_LCD_SMALL_FONT_SPACE) / 2);
+    sStringLocation.u16PixelRowAddress = U8_LCD_SMALL_FONT_LINE5;
+    LcdLoadString(message, LCD_FONT_SMALL, &sStringLocation);
+  } 
+
+} /* end displayMessage(u8 message[]) */
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*! @protectedsection */                                                                                            
@@ -332,6 +370,7 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  isANTMaster = 0;
   /* Initialize ANT channels for both master and slave */
   AntAssignChannelInfoType sChannelInfo;
 
@@ -371,6 +410,9 @@ void UserApp1Initialize(void)
   LedOn(GREEN1);
   LedOn(GREEN2);
   LedOn(GREEN3);
+
+  /* Initialize grid */
+  displayGrid();
 
   /* Initializes pin used for shocking as digital output for use in shockingFunction() */
   BladeRequestPin(BLADE_PIN0, DIGITAL_OUT);
@@ -423,7 +465,7 @@ State Machine Function Definitions
 
 
 /*-------------------------------------------------------------------------------------------------------------------*/
-/* Placement of ships at the beginning of the game */
+/* Placement of ships at the beginning of the game (This state is called once) */
 void placement() {
     if (firstRun == 0) { // If it's the first run after initialization disable ANT to avoid errors
         if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
@@ -431,7 +473,8 @@ void placement() {
             firstRun++;
         }
     }
-    if (ship > 3) {
+
+    if (ship > 3) { // All ships have been placed end placement()
         if (isANTMaster == 1) {
             UserApp1_pfStateMachine = shoot; // If Ant Master it's your turn first
         } else if (isANTMaster == 0) {
@@ -615,7 +658,15 @@ void sendShot() {
             au8AntMessage[5]++;
         }
       } /* End ANT_TICK */
-    } /* End ReadAppMessage Buffer */
+
+      /* Check if endgame flag is being sent by other board for master */
+      if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes [4] == 69) {
+        LcdClearScreen();
+        AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
+        winner = 1;
+        UserApp1_pfStateMachine = endGame;
+      } /* end endgame flag*/
+    } /* end ReadAppMessage Buffer */
   } else if (isANTMaster == 0) {
     static u8 au8LastAntData[ANT_APPLICATION_MESSAGE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, };
     bool bGotNewData;
@@ -664,12 +715,20 @@ void sendShot() {
         /* A channel period has gone by*/
         UserApp1_u32TickMsgCount++;
       } /* end ANT_TICK */
+
+      /* Check if endgame flag is being sent by other board for slave */
+      if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes [4] == 69) {
+        LcdClearScreen();
+        AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
+        winner = 1;
+        UserApp1_pfStateMachine = endGame;
+      } /* end endgame flag*/
     } /* end AntReadAppMessageBuffer()*/
   } /* end isAntMaster*/
 } /* end sendShot() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
-/* Wait for ANT Channel to be configured*/
+/* Wait for ANT Channel to be configured */
 static void UserApp1SM_WaitAntReady(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CONFIGURED) {
     if(AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP)) {
@@ -681,7 +740,7 @@ static void UserApp1SM_WaitAntReady(void) {
 } /* end UserApp1SM_WaitAntReady() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/
-/* Hold here until ANT Confirms channel is open*/
+/* Hold here until ANT Confirms channel is open */
 static void UserApp1SM_WaitChannelOpen(void) {
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_OPEN) {
     UserApp1_pfStateMachine = sendShot; // Advance state machine
@@ -691,7 +750,36 @@ static void UserApp1SM_WaitChannelOpen(void) {
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* When all ships have no health alert other board of defeat */
 void endGame() {
+  if (winner == 1) {
+    static u8 winMessage1[] = "Winner Winner";
+    displayMessage(winMessage1, 3);
+    static u8 winMessage2[] = "Chicken Dinner";
+    displayMessage(winMessage2, 3);
 
+    ledsOff();
+    LedOn(BLUE0);
+    LedOn(BLUE1);
+    LedOn(BLUE2);
+    LedOn(BLUE3);
+  } else {
+    static u8 loseMessage1[] = "You lose >:)";
+    displayMessage(loseMessage1, 3);
+    static u8 loseMessage2[] = "that must've hurt.";
+    displayMessage(loseMessage2, 4);
+
+    ledsOff();
+    LedOn(RED0);
+    LedOn(RED1);
+    LedOn(RED2);
+    LedOn(RED3);
+
+    /* Alert other board of win */
+    au8AntMessage[4] = 0x69; // Set lost code
+    if(AntReadAppMessageBuffer()) { // Prevent ant buffer error
+    }
+    AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage); // Send winning message through ANT
+  }
+  
 } /* End endGame() */
 
 /*-------------------------------------------------------------------------------------------------------------------*/

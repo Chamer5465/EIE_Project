@@ -36,6 +36,7 @@ void displayGrid(void);
 void ledsOff(void);
 void checkHealth();
 void checkHit(u8 shot);
+void displayMessage(u8 message[], int line);
 
 
 /*------------------------------------------------------------------------------------------------------------------*/
