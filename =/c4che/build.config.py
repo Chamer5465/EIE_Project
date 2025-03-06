@@ -1,0 +1,2 @@
+version = 0x2001a00
+tools = [{'tool': 'ar', 'tooldir': None, 'funs': None}, {'tool': 'c', 'tooldir': None, 'funs': None}, {'tool': 'gcc', 'tooldir': None, 'funs': None}, {'tool': 'ar', 'tooldir': None, 'funs': None}, {'tool': 'asm', 'tooldir': None, 'funs': None}, {'tool': 'gas', 'tooldir': None, 'funs': None}, {'tool': 'gccdeps', 'tooldir': None, 'funs': None}, {'tool': 'clang_compilation_database', 'tooldir': None, 'funs': None}]

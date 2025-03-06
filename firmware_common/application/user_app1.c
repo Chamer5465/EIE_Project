@@ -144,6 +144,70 @@ void displayBoard(int gameboard[4][8]) {
 }
 
 /*-------------------------------------------------------------------------------------------------------------------*/
+/* Displays the grid of the battleship board (moved from initialize to allow the implementation of text) */
+void displayGrid(void) {
+  LcdClearScreen();
+  PixelAddressType targetPixel; 
+  for (int i = 0; i < 128; i++) {
+    targetPixel.u16PixelRowAddress = 0;
+    targetPixel.u16PixelColumnAddress = i;
+    LcdSetPixel(&targetPixel);
+  }
+  for (int i = 0; i < 64; i++) {
+    targetPixel.u16PixelRowAddress = i;
+    targetPixel.u16PixelColumnAddress = 0;
+    LcdSetPixel(&targetPixel);
+  }
+  for (int j = 16; j <= 48; j += 16) {
+    for (int i = 0; i < 128; i++) {
+      targetPixel.u16PixelRowAddress = j - 1;
+      targetPixel.u16PixelColumnAddress = i;
+      LcdSetPixel(&targetPixel);
+      targetPixel.u16PixelRowAddress = j;
+      targetPixel.u16PixelColumnAddress = i;
+      LcdSetPixel(&targetPixel);
+    }
+  }
+  for (int j = 16; j <= 112; j += 16) {
+    for (int i = 0; i < 64; i++) {
+      targetPixel.u16PixelRowAddress = i;
+      targetPixel.u16PixelColumnAddress = j - 1;
+      LcdSetPixel(&targetPixel);
+      targetPixel.u16PixelRowAddress = i;
+      targetPixel.u16PixelColumnAddress = j;
+      LcdSetPixel(&targetPixel);
+    }
+  }
+  for (int i = 0; i < 128; i++) {
+    targetPixel.u16PixelRowAddress = 63;
+    targetPixel.u16PixelColumnAddress = i;
+    LcdSetPixel(&targetPixel);
+  }
+  for (int i = 0; i < 64; i++) {
+    targetPixel.u16PixelRowAddress = i;
+    targetPixel.u16PixelColumnAddress = 127;
+    LcdSetPixel(&targetPixel);
+  }
+}
+
+/*-------------------------------------------------------------------------------------------------------------------*/
+/* Turns off all of the LED's */
+void ledsOff(void) {
+  LedOff(GREEN0);
+  LedOff(RED0);
+  LedOff(BLUE0);
+  LedOff(GREEN1);
+  LedOff(RED1);
+  LedOff(BLUE1);
+  LedOff(GREEN2);
+  LedOff(RED2);
+  LedOff(BLUE2);
+  LedOff(GREEN3);
+  LedOff(RED3);
+  LedOff(BLUE3);
+}
+
+/*-------------------------------------------------------------------------------------------------------------------*/
 /* Checks the Health of the ships and changes LED states */
 void checkHealth() {
   int ship1 = 0;
@@ -163,12 +227,20 @@ void checkHealth() {
           }
       }
   }
-  if (ship1 == 0) {
+  if (ship1 == 1) {
+      LedOn(GREEN0);
+      LedOff(RED0);
+      LedOff(BLUE0);
+} else if (ship1 == 0) {
       LedOff(RED0);
       LedOff(GREEN0);
       LedOff(BLUE0);
   }
   if (ship2 == 1) {
+      LedOn(GREEN1);
+      LedOff(RED1);
+      LedOff(BLUE1);
+  } else if (ship2 == 1) {
       LedOn(RED1);
       LedOff(GREEN1);
       LedOff(BLUE1);
@@ -177,7 +249,11 @@ void checkHealth() {
       LedOff(GREEN1);
       LedOff(BLUE1);
   }
-  if (ship3 == 2) {
+  if (ship3 == 3) {
+      LedOn(GREEN3);
+      LedOff(RED3);
+      LedOff(BLUE3);
+  } else if (ship3 == 2) {
       LedOn(RED2);
       LedOn(GREEN2);
       LedOff(BLUE2);
@@ -190,7 +266,11 @@ void checkHealth() {
       LedOff(GREEN2);
       LedOff(BLUE2);
   }
-  if (ship4 == 2) {
+  if (ship4 == 3) {
+      LedOn(GREEN3);
+      LedOff(RED3);
+      LedOff(BLUE3);
+  } else if (ship4 == 2) {
       LedOn(RED3);
       LedOn(GREEN3);
       LedOff(BLUE3);
@@ -252,7 +332,7 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
-  /* Start ANT Initialize */
+  /* Initialize ANT channels for both master and slave */
   AntAssignChannelInfoType sChannelInfo;
 
   if(AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_UNCONFIGURED)
@@ -285,63 +365,14 @@ void UserApp1Initialize(void)
     AntAssignChannel(&sChannelInfo);
   } 
 
-  /* Start Battleship Initialize */
+  /* Initialize LED's for ship health for use later in checkHealth() */
+  ledsOff();
   LedOn(GREEN0);
-  LedOff(RED0);
-  LedOff(BLUE0);
   LedOn(GREEN1);
-  LedOff(RED1);
-  LedOff(BLUE1);
   LedOn(GREEN2);
-  LedOff(RED2);
-  LedOff(BLUE2);
   LedOn(GREEN3);
-  LedOff(RED3);
-  LedOff(BLUE3);
-  LcdClearScreen();
-  PixelAddressType targetPixel; 
-  for (int i = 0; i < 128; i++) {
-    targetPixel.u16PixelRowAddress = 0;
-    targetPixel.u16PixelColumnAddress = i;
-    LcdSetPixel(&targetPixel);
-  }
-  for (int i = 0; i < 64; i++) {
-    targetPixel.u16PixelRowAddress = i;
-    targetPixel.u16PixelColumnAddress = 0;
-    LcdSetPixel(&targetPixel);
-  }
-  for (int j = 16; j <= 48; j += 16) {
-    for (int i = 0; i < 128; i++) {
-      targetPixel.u16PixelRowAddress = j - 1;
-      targetPixel.u16PixelColumnAddress = i;
-      LcdSetPixel(&targetPixel);
-      targetPixel.u16PixelRowAddress = j;
-      targetPixel.u16PixelColumnAddress = i;
-      LcdSetPixel(&targetPixel);
-    }
-  }
-  for (int j = 16; j <= 112; j += 16) {
-    for (int i = 0; i < 64; i++) {
-      targetPixel.u16PixelRowAddress = i;
-      targetPixel.u16PixelColumnAddress = j - 1;
-      LcdSetPixel(&targetPixel);
-      targetPixel.u16PixelRowAddress = i;
-      targetPixel.u16PixelColumnAddress = j;
-      LcdSetPixel(&targetPixel);
-    }
-  }
-  for (int i = 0; i < 128; i++) {
-    targetPixel.u16PixelRowAddress = 63;
-    targetPixel.u16PixelColumnAddress = i;
-    LcdSetPixel(&targetPixel);
-  }
-  for (int i = 0; i < 64; i++) {
-    targetPixel.u16PixelRowAddress = i;
-    targetPixel.u16PixelColumnAddress = 127;
-    LcdSetPixel(&targetPixel);
-  }
 
-   /* Initializes Shocking Function */
+  /* Initializes pin used for shocking as digital output for use in shockingFunction() */
   BladeRequestPin(BLADE_PIN0, DIGITAL_OUT);
   AT91C_BASE_PIOB->PIO_PER = PB_03_BLADE_AN0;
   AT91C_BASE_PIOB->PIO_OER = PB_03_BLADE_AN0;
@@ -637,7 +668,6 @@ void sendShot() {
   } /* end isAntMaster*/
 } /* end sendShot() */
 
-
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Wait for ANT Channel to be configured*/
 static void UserApp1SM_WaitAntReady(void) {
@@ -675,9 +705,14 @@ void shockingFunction() {
 } /* end shockingFunction() */
      
 /*-------------------------------------------------------------------------------------------------------------------*/
-/* Handle an error */
+/* Error occured, set last led to red and clear screen */
 static void UserApp1SM_Error(void) {
-  
+  /* Clearly shows that there is an error defined by me in comparison to HardFault() */
+  ledsOff();
+  LedOn(RED3);
+  LcdClearScreen();
+  LedOff(LCD_BL);
+
 } /* end UserApp1SM_Error() */
 
 

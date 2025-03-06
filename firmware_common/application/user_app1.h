@@ -32,9 +32,10 @@ Function Declarations
 /*--------------------------------------------------------------------------------------------------------------------*/
 
 void displayBoard(int gameboard[4][8]);
-void checkHit(u8 shot);
+void displayGrid(void);
+void ledsOff(void);
 void checkHealth();
-
+void checkHit(u8 shot);
 
 
 /*------------------------------------------------------------------------------------------------------------------*/
@@ -51,17 +52,18 @@ void UserApp1RunActiveState(void);
 
 /***********************************************************************************************************************
 State Machine Declarations
-***********************************************************************************************************************/
-static void UserApp1SM_Idle(void);    
-static void UserApp1SM_Error(void);
-static void UserApp1SM_WaitAntReady(void);
-static void UserApp1SM_WaitChannelOpen(void);    
-static void UserApp1SM_ClearAntData(void);
-void shoot(void);
+***********************************************************************************************************************/  
 void placement(void);
-void endGame(void);
+void shoot(void);
 void sendShot(void);
+
+static void UserApp1SM_WaitAntReady(void);
+static void UserApp1SM_WaitChannelOpen(void);   
+
+void endGame(void);
 void shockingFunction(void);
+
+static void UserApp1SM_Error(void);
 
 
 /**********************************************************************************************************************
