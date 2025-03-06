@@ -71,8 +71,6 @@ extern PixelAddressType G_sLcdClearLine5;                         /* From lcd-NH
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
-
-// Added this comment to keep the formatting we had with indents but at the same time make int isANTMaster on line 69 as it's an easy line to remember for debugging
 int isANTMaster = 1; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
@@ -370,7 +368,6 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
-  isANTMaster = 0;
   /* Initialize ANT channels for both master and slave */
   AntAssignChannelInfoType sChannelInfo;
 
@@ -660,7 +657,7 @@ void sendShot() {
       } /* End ANT_TICK */
 
       /* Check if endgame flag is being sent by other board for master */
-      if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes [4] == 69) {
+      if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes[4] == 0x69) {
         LcdClearScreen();
         AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
         winner = 1;
@@ -717,7 +714,7 @@ void sendShot() {
       } /* end ANT_TICK */
 
       /* Check if endgame flag is being sent by other board for slave */
-      if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes [4] == 69) {
+      if(G_eAntApiCurrentMessageClass == ANT_DATA && G_au8AntApiCurrentMessageBytes[4] == 0x69) {
         LcdClearScreen();
         AntCloseChannelNumber(U8_ANT_CHANNEL_USERAPP);
         winner = 1;
@@ -754,7 +751,7 @@ void endGame() {
     static u8 winMessage1[] = "Winner Winner";
     displayMessage(winMessage1, 3);
     static u8 winMessage2[] = "Chicken Dinner";
-    displayMessage(winMessage2, 3);
+    displayMessage(winMessage2, 4);
 
     ledsOff();
     LedOn(BLUE0);
@@ -774,14 +771,28 @@ void endGame() {
     LedOn(RED3);
 
     /* Alert other board of win */
-    au8AntMessage[4] = 0x69; // Set lost code
-    if(AntReadAppMessageBuffer()) { // Prevent ant buffer error
+    if(isANTMaster == 1) {
+      if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CLOSED) {
+        AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
+      }
+      au8AntMessage[4] = 0x69; // Set lost code
+      if(AntReadAppMessageBuffer()) { // Prevent ant buffer error
+      }
+      AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage); // Send winning message through ANT
     }
-    AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage); // Send winning message through ANT
+    if(isANTMaster == 0) {
+      if (AntRadioStatusChannel(U8_ANT_CHANNEL_USERAPP) == ANT_CLOSED) {
+        AntOpenChannelNumber(U8_ANT_CHANNEL_USERAPP);
+      }
+      au8AntMessage[4] = 0x69; // Set lost code
+      if(AntReadAppMessageBuffer()) { // Prevent ant buffer error
+      }
+      AntQueueBroadcastMessage(U8_ANT_CHANNEL_USERAPP, au8AntMessage); // Send winning message through ANT
+    }
   }
   
 } /* End endGame() */
-
+         
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* This function might shock you */
 void shockingFunction() {
