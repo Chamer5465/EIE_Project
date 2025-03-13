@@ -71,7 +71,7 @@ extern PixelAddressType G_sLcdClearLine5;                         /* From lcd-NH
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
-int isANTMaster = 1; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
+int isANTMaster = 0; /* Sets one devboard as ANT Master to avoid confusion (1 = TRUE) Master always goes first */
 
 int board[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
 int shootBoard[4][8] = {{5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}, {5, 5, 5, 5, 5, 5, 5, 5}};
@@ -620,16 +620,6 @@ void shoot() {
         xPrev = x;
         yPrev = y;
     }
-    if (shootBoard[y][x] == 0) {
-        x++;
-        if (x > 7) {
-            x = 0;
-            y++;
-            if (y > 3) {
-                y = 0;
-            }
-        }
-    }
     if(WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) { // Checks if both button are pressed at the same time
         ButtonAcknowledge(BUTTON0);
         ButtonAcknowledge(BUTTON1);
@@ -648,7 +638,17 @@ void shoot() {
                 x = 0;
             }
             if (x != xPrev || y != yPrev) // Deletes previous sprite
-              shootBoard[yPrev][xPrev] = currentBoardState; // Uses previous board state
+                shootBoard[yPrev][xPrev] = currentBoardState; // Uses previous board state
+            while (shootBoard[y][x] == 0) { // Make sure you cant shoot at the same place twice, if you could you could shock someone forever, funny, but bad
+                x++;
+                if (x > 7) {
+                    x = 0;
+                    y++;
+                    if (y > 3) {
+                        y = 0;
+                    }
+                }
+            }
             currentBoardState = shootBoard[y][x]; // Saves board type to not overwrite other things
             shootBoard[y][x] = 6; // board code 6 is a target
         }
@@ -661,9 +661,20 @@ void shoot() {
                 y = 0;
             }
             if (x != xPrev || y != yPrev) // Deletes previous sprite
-              shootBoard[yPrev][xPrev] = currentBoardState; // Uses previous board state
+                shootBoard[yPrev][xPrev] = currentBoardState; // Uses previous board state
+            while (shootBoard[y][x] == 0) { // Make sure you cant shoot at the same place twice, if you could you could shock someone forever, funny, but bad
+                y++;
+                if (y > 3) {
+                    x = 0;
+                    y++;
+                    if (y > 3) {
+                        y = 0;
+                    }
+                }
+            }
             currentBoardState = shootBoard[y][x]; // Saves board type to not overwrite other things
             shootBoard[y][x] = 6; // board code 6 is a target
+            
         }
     }
   displayBoard(shootBoard);
