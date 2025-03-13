@@ -478,13 +478,13 @@ void placement() {
             UserApp1_pfStateMachine = sendShot; // If Ant Slave it's your turn second, enter sendShot with incompatible coordinates
         }
     }
-    if (WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) {
+    if (WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) { //both buttons pressed move to next ship
         ButtonAcknowledge(BUTTON0);
         ButtonAcknowledge(BUTTON1);
         ship++;
     }
     if(IsButtonHeld(BUTTON0, 50)) {
-        if (WasButtonPressed(BUTTON0)) {
+        if (WasButtonPressed(BUTTON0)) { // x movement
             ButtonAcknowledge(BUTTON0);
             x++;
             if (x > 7) {
@@ -492,7 +492,7 @@ void placement() {
             }
         }
     }
-    if(IsButtonHeld(BUTTON1, 50)) {
+    if(IsButtonHeld(BUTTON1, 50)) { // y movement
         if (WasButtonPressed(BUTTON1)) {
             ButtonAcknowledge(BUTTON1);
             y++;
@@ -501,52 +501,67 @@ void placement() {
             }
         }
     }
-    if (ship == 0) {
+    if (ship == 0) { //First ship, doesnt need to check for other ships
         board[y][x] = 1;
         if (xPrev != x || yPrev != y) {
             board[yPrev][xPrev] = 5;
             xPrev = x;
             yPrev = y;
         }
-    } else if (ship == 1) {
-        for (int i = 0; i < 4; i++) {
+    } else if (ship == 1) { // second ship only needs to check for first ship
+        for (int i = 0; i < 4; i++) { // resets board from previous potential target
             for (int j = 0; j < 8; j++) {
                 if (board[i][j] == 2) {
                     board[i][j] = 5;
                 }
             }
         }
-        if ((board[y][x] != 5 && board[y][x] != 2) || ((board[y][x-1] != 5 && board[y][x-1] != 2) && x > 6) || ((board[y][x+1] != 5 && board[y][x+1] != 2) && x < 7)) {
+        if ((board[y][x] != 5 && board[y][x] != 2) 
+        || ((board[y][x-1] != 5 && board[y][x-1] != 2) && x > 6) 
+        || ((board[y][x+1] != 5 && board[y][x+1] != 2) && x < 7)) { // This is long and gross but its needed to check all possible ship placement 
             x++;
-            if (x > 7) {
+            if (x > 7) { // Increment x if ship is overlapping other ship
                 x = 0;
                 y++;
+                if (y > 3) { // Increment y if at end of board
+                    y = 0;
+                }
             }
             xPrev = x;
-        } else {
+        } else { // first part of ship doesnt need to worry about going offscreen
             board[y][x] = 2;
-            if (x > 6) {
+            if (x > 6) { // this is needed for the right side of the board because ship would go ofscreen otherwise
                 board[y][x-1] = 2;
             } else {
                 board[y][x+1] = 2;
             }
         }
-    } else if (ship == 2) {
-        for (int i = 0; i < 4; i++) {
+    } else if (ship == 2) { // third ship needs to check for first and second ship
+        for (int i = 0; i < 4; i++) { // resets board from previous potential target
             for (int j = 0; j < 8; j++) {
-                if (board[i][j] == 3) {
+                if (board[i][j] == 3) { 
                     board[i][j] = 5;
                 }
             }
         }
-        if ((board[y][x] != 5 && board[y][x] != 3) || (((board[y][x-1] != 5 && board[y][x-1] != 3) || (board[y][x-2] != 5 && board[y][x-2] != 3)) && x == 7) || (((board[y][x-1] != 5 && board[y][x-1] != 3) || (board[y][x+1] != 5 && board[y][x+1] != 3)) && x == 6) || (((board[y][x+1] != 5 && board[y][x+1] != 3) || (board[y][x+2] != 5 && board[y][x+2] != 3)) && x < 6)) {
+        if ((board[y][x] != 5 && board[y][x] != 3) 
+        || (((board[y][x-1] != 5 && board[y][x-1] != 3) 
+        || (board[y][x-2] != 5 && board[y][x-2] != 3)) && x == 7) 
+        || (((board[y][x-1] != 5 && board[y][x-1] != 3) 
+        || (board[y][x+1] != 5 && board[y][x+1] != 3)) && x == 6) 
+        || (((board[y][x+1] != 5 && board[y][x+1] != 3) 
+        || (board[y][x+2] != 5 && board[y][x+2] != 3)) && x < 6)) { //this is longer and grosser but again is needed to check for all possible ship locations
             x++;
-            if (x > 7) {
+            if (x > 7) { // increment x if theres a ship in the way
                 x = 0;
+                y++;
+                if (y > 3) { // increment y if at the end of the board
+                    y = 0;
+                }
             }
         } else {
             board[y][x] = 3;
-            if (x == 6) {
+            if (x == 6) { // this is needed for the right side of the board because ship would go ofscreen otherwise
                 board[y][x-1] = 3;
                 board[y][x+1] = 3;
             } else if (x == 7) {
@@ -557,22 +572,32 @@ void placement() {
                 board[y][x+2] = 3;
             }
         }
-    } else if (ship == 3) {
-        for (int i = 0; i < 4; i++) {
+    } else if (ship == 3) { // fourth ship must check for all previous ships
+        for (int i = 0; i < 4; i++) { // resets board from previous potential target
             for (int j = 0; j < 8; j++) {
                 if (board[i][j] == 4) {
                     board[i][j] = 5;
                 }
             }
         }
-        if ((board[y][x] != 5 && board[y][x] != 4) || (((board[y][x-1] != 5 && board[y][x-1] != 4) || (board[y][x-2] != 5 && board[y][x-2] != 4)) && x == 7) || (((board[y][x-1] != 5 && board[y][x-1] != 4) || (board[y][x+1] != 5 && board[y][x+1] != 4)) && x == 6) || (((board[y][x+1] != 5 && board[y][x+1] != 4) || (board[y][x+2] != 5 && board[y][x+2] != 4)) && x < 6)) {
+        if ((board[y][x] != 5 && board[y][x] != 4) 
+        || (((board[y][x-1] != 5 && board[y][x-1] != 4) 
+        || (board[y][x-2] != 5 && board[y][x-2] != 4)) && x == 7) 
+        || (((board[y][x-1] != 5 && board[y][x-1] != 4) 
+        || (board[y][x+1] != 5 && board[y][x+1] != 4)) && x == 6) 
+        || (((board[y][x+1] != 5 && board[y][x+1] != 4) 
+        || (board[y][x+2] != 5 && board[y][x+2] != 4)) && x < 6)) { // this is even longer and grosser but like the others is necessary to check for all possible ship positions
             x++;
-            if (x > 7) {
+            if (x > 7) { // increment x if theres a ship in the way
                 x = 0;
+                y++;
+                if (y > 3) { // increment y if at the end of the board
+                    y = 0;
+                }
             }
-        } else {
+        } else { // first ship position doesnt need to worry about going off screen
             board[y][x] = 4;
-            if (x == 6) {
+            if (x == 6) { // this is needed to ensure the ship doesnt go offscreen when to the right
                 board[y][x-1] = 4;
                 board[y][x+1] = 4;
             } else if (x == 7) {
@@ -594,6 +619,16 @@ void shoot() {
     if (x != xPrev || y != yPrev) { // Sets new xPrev and yPrev
         xPrev = x;
         yPrev = y;
+    }
+    if (shootBoard[y][x] == 0) {
+        x++;
+        if (x > 7) {
+            x = 0;
+            y++;
+            if (y > 3) {
+                y = 0;
+            }
+        }
     }
     if(WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) { // Checks if both button are pressed at the same time
         ButtonAcknowledge(BUTTON0);
