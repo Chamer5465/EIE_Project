@@ -273,6 +273,10 @@ void HardFault_Handler(void)
   LedOff(YELLOW);
   LedOn(RED);
 #else
+uint32_t hfsr = SCB->HFSR;
+uint32_t cfsr = SCB->CFSR;
+uint32_t mmfar = SCB->MMFAR;
+uint32_t bfar = SCB->BFAR;
   LedOff(BLUE0);
   LedOff(BLUE1);
   LedOff(BLUE2);
