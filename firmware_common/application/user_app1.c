@@ -521,6 +521,9 @@ void placement() {
             if (x > 7) {
                 x = 0;
                 y++;
+                if (y > 3) {
+                    y = 0;
+                }
             }
             xPrev = x;
         } else {
@@ -543,6 +546,10 @@ void placement() {
             x++;
             if (x > 7) {
                 x = 0;
+                y++;
+                if (y > 3) {
+                    y = 0;
+                }
             }
         } else {
             board[y][x] = 3;
@@ -569,6 +576,10 @@ void placement() {
             x++;
             if (x > 7) {
                 x = 0;
+                y++;
+                if (y > 3) {
+                    y = 0;
+                }
             }
         } else {
             board[y][x] = 4;
@@ -594,6 +605,16 @@ void shoot() {
     if (x != xPrev || y != yPrev) { // Sets new xPrev and yPrev
         xPrev = x;
         yPrev = y;
+    }
+    if (shootBoard[y][x] == 0) {
+        x++;
+        if (x > 7) {
+            x = 0;
+            y++;
+            if (y > 3) {
+                y = 0;
+            }
+        }
     }
     if(WasButtonPressed(BUTTON0) && WasButtonPressed(BUTTON1)) { // Checks if both button are pressed at the same time
         ButtonAcknowledge(BUTTON0);
