@@ -520,6 +520,7 @@ void placement() {
             x++;
             if (x > 7) {
                 x = 0;
+                y++;
             }
             xPrev = x;
         } else {
